@@ -8,6 +8,8 @@ import {
   utilities as nestWinstonModuleUtilities,
   WinstonModule,
 } from 'nest-winston';
+import { AuthModule } from './components/auth/auth.module';
+import { UserModule } from './components/user/user.module';
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import {
         username: configService.get('MYSQL_DATABASE_USER'),
         password: configService.get('MYSQL_DATABASE_PASS'),
         database: configService.get('MYSQL_DATABASE_NAME'),
+        synchronize: configService.get('SYNCHRONIZE') === 'true',
         entities: [__dirname + '/**/entities/*.entity{.ts,.js}'],
       }),
       inject: [ConfigService],
@@ -40,6 +43,8 @@ import {
         }),
       ],
     }),
+    AuthModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
