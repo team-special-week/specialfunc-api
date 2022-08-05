@@ -1,6 +1,15 @@
-import { Controller, Get, HttpCode, HttpStatus, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
+import { UserEntity } from '../user/entities/user.entity';
+import { ILoginResponse } from './interfaces/login.interfaces';
 
 @Controller('auth')
 export class AuthController {
@@ -16,7 +25,23 @@ export class AuthController {
   @Get('/kakao/callback')
   @HttpCode(200)
   @UseGuards(AuthGuard('kakao'))
-  async loginWithKakaoCallback(@Req() req) {
+  async loginWithKakaoCallback(@Req() req): Promise<ILoginResponse> {
+    return this.loginAndMakeResponse(req.user);
+  }
 
+  private loginAndMakeResponse(payload: any): ILoginResponse {
+    const { user, isNewUser } = payload as {
+      user: UserEntity;
+      isNewUser: boolean;
+    };
+
+    const token = this.authService.login(user);
+
+    return {
+      isNewUser,
+      nickname: user.nickname,
+      profileImageURL: user.profileImageURL,
+      accessToken: token,
+    };
   }
 }

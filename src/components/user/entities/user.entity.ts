@@ -3,17 +3,20 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { EAuthProvider } from '../../auth/enums/EAuthProvider';
 import { ITypeORMEntityHelper } from '../../../common/interfaces/ITypeORMEntityHelper';
+import { ILoginResult } from '../../auth/interfaces/login.interfaces';
 
 @Entity('spf_users')
 export class UserEntity implements ITypeORMEntityHelper {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Index('idx_unique_id', { unique: true })
   @Column({
     type: 'varchar',
     name: 'unique_id',
@@ -70,6 +73,13 @@ export class UserEntity implements ITypeORMEntityHelper {
 
   @DeleteDateColumn()
   deletedAt: Date;
+
+  applyFromLoginResult(loginResult: ILoginResult) {
+    this.uniqueId = loginResult.uniqueId;
+    this.nickname = loginResult.nickname;
+    this.profileImageURL = loginResult.profileImageURL;
+    this.email = loginResult.emailAddress;
+  }
 
   get metadata(): any {
     throw new Error('Method not implemented.');

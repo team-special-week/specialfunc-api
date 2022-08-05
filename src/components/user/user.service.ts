@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from './entities/user.entity';
-import { Repository } from 'typeorm';
-import { IUserEntity } from './interfaces/IUserEntity';
+import { FindOneOptions, Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
@@ -11,20 +10,11 @@ export class UserService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async findUser(
-    user: IUserEntity,
-    withDeleted: boolean,
-  ): Promise<UserEntity | null> {
-    if (!user.id && !user.uniqueId) {
-      return null;
-    }
+  findUser(options: FindOneOptions<UserEntity>) {
+    return this.userRepository.findOne(options);
+  }
 
-    return this.userRepository.findOne({
-      where: {
-        id: user.id ?? undefined,
-        uniqueId: user.uniqueId ?? undefined,
-      },
-      withDeleted,
-    });
+  saveOrUpdateUser(user: UserEntity) {
+    return this.userRepository.save(user);
   }
 }
