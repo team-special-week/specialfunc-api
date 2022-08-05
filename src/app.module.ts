@@ -8,6 +8,7 @@ import {
   utilities as nestWinstonModuleUtilities,
   WinstonModule,
 } from 'nest-winston';
+import { ApplicationModule } from './components/application/application.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import {
         }),
       ],
     }),
+    ApplicationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
