@@ -1,0 +1,5 @@
+export enum ESPFuncStatusCode {
+  UNREGISTERED_ACCOUNT = 'A100',
+  BLOCKED_ACCOUNT = 'A101',
+  USER_NOT_FOUND_EXCEPTION = 'A102',
+}
