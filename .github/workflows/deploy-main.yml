@@ -26,12 +26,11 @@ jobs:
     - run: npm run build --if-present
     
     - name: Docker Build Tag Publish
-      uses: bb2002/github-actions-docker-publish-with-dockerfile@v1.0.0
+      uses: bitovi/github-actions-docker-publish@v1.0.2
       with:
         image_tag: latest_main
         org_name: bb2002
         repo_name: specialfunc-api
         docker_username: ${{ secrets.DOCKERHUB_USERNAME }}
         docker_password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        dockerfile: Dockerfile.prod
     
