@@ -1,14 +1,14 @@
 # This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: Deploy main
+name: Deploy production
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  BuildAndTest:
+  Deploy:
     runs-on: ubuntu-latest
 
     strategy:
@@ -28,9 +28,49 @@ jobs:
     - name: Docker Build Tag Publish
       uses: bitovi/github-actions-docker-publish@v1.0.2
       with:
-        image_tag: latest_main
+        image_tag: cicd
         org_name: bb2002
         repo_name: specialfunc-api
         docker_username: ${{ secrets.DOCKERHUB_USERNAME }}
         docker_password: ${{ secrets.DOCKERHUB_PASSWORD }}
     
+    - name: Login saintdev.kr
+      uses: cross-the-world/ssh-scp-ssh-pipelines@latest
+      env:
+        MYSQL_DATABASE_HOST: ${{ secrets.MYSQL_DATABASE_HOST }}
+        MYSQL_DATABASE_USER: ${{ secrets.MYSQL_DATABASE_USER }}
+        MYSQL_DATABASE_PASS: ${{ secrets.MYSQL_DATABASE_PASS }}
+        MYSQL_DATABASE_NAME: ${{ secrets.MYSQL_DATABASE_NAME }}
+        MYSQL_DATABASE_PORT: 3306
+        SYNCHRONIZE: false
+        KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+        KAKAO_CALLBACK_URL: ${{ secrets.KAKAO_CALLBACK_URL }}
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        GOOGLE_CALLBACK_URL: ${{ secrets.GOOGLE_CALLBACK_URL }}
+        JWT_SECRET_TOKEN: ${{ secrets.JWT_SECRET_TOKEN }}
+        
+      with:
+        host: direct.saintdev.kr
+        user: ${{ secrets.SAINTDEVKR_USERNAME }}
+        pass: ${{ secrets.SAINTDEVKR_PASSWORD }}
+        port: 22
+        connect_timeout: 10s
+        first_ssh: |
+          docker stop specialfunc-api
+          docker rm specialfunc-api
+          docker pull bb2002/specialfunc-api:cicd
+          docker run -d \
+            -e MYSQL_DATABASE_HOST=$MYSQL_DATABASE_HOST \
+            -e MYSQL_DATABASE_USER=$MYSQL_DATABASE_USER \
+            -e MYSQL_DATABASE_PASS=$MYSQL_DATABASE_PASS \
+            -e MYSQL_DATABASE_NAME=$MYSQL_DATABASE_NAME \
+            -e KAKAO_CLIENT_ID=$KAKAO_CLIENT_ID \
+            -e KAKAO_CALLBACK_URL=$KAKAO_CALLBACK_URL \
+            -e GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID \
+            -e GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET \
+            -e GOOGLE_CALLBACK_URL=$GOOGLE_CALLBACK_URL \
+            -e JWT_SECRET_TOKEN=$JWT_SECRET_TOKEN \
+            bb2002/specialfunc-api:cicd
+          
+        
