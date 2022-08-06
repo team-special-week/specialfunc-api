@@ -1,4 +1,10 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateApplicationDto {
   @IsString()
@@ -16,6 +22,7 @@ export class CreateApplicationDto {
   icon: string;
 
   @IsString()
+  @Matches(/[a-zA-Z\d-]/g)
   @MinLength(3)
   @MaxLength(25)
   endpoint: string;

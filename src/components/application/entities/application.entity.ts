@@ -1,11 +1,13 @@
+import { UserEntity } from 'src/components/user/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
   Index,
+  ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('spf_applications')
@@ -46,6 +48,9 @@ export class ApplicationEntity {
 
   // FK 설정은 아래에서...
   // 당장 생각나는건 Functions, Owner 정도
+  @Index('idx_owner')
+  @ManyToOne(() => UserEntity, (user) => user.myApplications)
+  owner: UserEntity;
 
   @CreateDateColumn()
   createdAt: Date;
