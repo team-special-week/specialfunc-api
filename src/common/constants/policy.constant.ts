@@ -1,0 +1,1 @@
+export const MAX_APPLICATION_COUNT = 50;

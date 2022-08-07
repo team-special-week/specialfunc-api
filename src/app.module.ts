@@ -10,6 +10,7 @@ import {
 } from 'nest-winston';
 import { AuthModule } from './components/auth/auth.module';
 import { UserModule } from './components/user/user.module';
+import { ApplicationModule } from './components/application/application.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { UserModule } from './components/user/user.module';
     }),
     AuthModule,
     UserModule,
+    ApplicationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
