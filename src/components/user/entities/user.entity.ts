@@ -13,6 +13,7 @@ import { ITypeORMEntityHelper } from '../../../common/interfaces/ITypeORMEntityH
 import { ILoginResult } from '../../auth/interfaces/login.interfaces';
 import { IUserEntity } from '../interfaces/IUserEntity';
 import { ApplicationEntity } from 'src/components/application/entities/application.entity';
+import { BlockedUserException } from '../../auth/exceptions/auth.exceptions';
 
 @Entity('spf_users')
 export class UserEntity implements ITypeORMEntityHelper {
@@ -85,6 +86,12 @@ export class UserEntity implements ITypeORMEntityHelper {
     this.nickname = loginResult.nickname;
     this.profileImageURL = loginResult.profileImageURL;
     this.email = loginResult.emailAddress;
+  }
+
+  isUserBlocked() {
+    if (this.blockExpiresAt && this.blockExpiresAt.getTime() > Date.now()) {
+      throw new BlockedUserException(this.blockExpiresAt);
+    }
   }
 
   get metadata(): IUserEntity {

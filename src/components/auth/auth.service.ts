@@ -33,9 +33,7 @@ export class AuthService {
       }
 
       // 차단된 계정인지 확인
-      if (user.blockExpiresAt && user.blockExpiresAt.getTime() > Date.now()) {
-        throw new BlockedUserException(user.blockExpiresAt);
-      }
+      user.isUserBlocked();
     }
 
     {

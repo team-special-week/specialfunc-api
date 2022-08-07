@@ -9,9 +9,12 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { CreateApplicationDto } from '../dto/create-application.dto';
+import { ITypeORMEntityHelper } from '../../../common/interfaces/ITypeORMEntityHelper';
+import { IApplicationEntity } from '../interfaces/IAppliationEntity';
 
 @Entity('spf_applications')
-export class ApplicationEntity {
+export class ApplicationEntity implements ITypeORMEntityHelper {
   @PrimaryGeneratedColumn()
   _id: number;
 
@@ -60,4 +63,24 @@ export class ApplicationEntity {
 
   @DeleteDateColumn()
   deletedAt: Date;
+
+  applyFromCreateApplicationDto(dto: CreateApplicationDto) {
+    this.name = dto.name;
+    this.description = dto.description;
+    this.icon = dto.icon;
+    this.endpoint = dto.endpoint;
+  }
+
+  get metadata(): IApplicationEntity {
+    return {
+      _id: this._id,
+      name: this.name,
+      description: this.description,
+      icon: this.icon,
+      endpoint: this.endpoint,
+      owner: this.owner.metadata,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
+  }
 }
