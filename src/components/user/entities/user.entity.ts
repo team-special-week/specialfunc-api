@@ -4,12 +4,16 @@ import {
   DeleteDateColumn,
   Entity,
   Index,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { EAuthProvider } from '../../auth/enums/EAuthProvider';
 import { ITypeORMEntityHelper } from '../../../common/interfaces/ITypeORMEntityHelper';
 import { ILoginResult } from '../../auth/interfaces/login.interfaces';
+import { IUserEntity } from '../interfaces/IUserEntity';
+import { ApplicationEntity } from 'src/components/application/entities/application.entity';
+import { BlockedUserException } from '../../auth/exceptions/auth.exceptions';
 
 @Entity('spf_users')
 export class UserEntity implements ITypeORMEntityHelper {
@@ -65,6 +69,9 @@ export class UserEntity implements ITypeORMEntityHelper {
   })
   blockExpiresAt: Date;
 
+  @OneToMany(() => ApplicationEntity, (app) => app.owner)
+  myApplications: ApplicationEntity[];
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -81,7 +88,21 @@ export class UserEntity implements ITypeORMEntityHelper {
     this.email = loginResult.emailAddress;
   }
 
-  get metadata(): any {
-    throw new Error('Method not implemented.');
+  isUserBlocked() {
+    if (this.blockExpiresAt && this.blockExpiresAt.getTime() > Date.now()) {
+      throw new BlockedUserException(this.blockExpiresAt);
+    }
+  }
+
+  get metadata(): IUserEntity {
+    return {
+      id: this.id,
+      provider: this.provider,
+      email: this.email,
+      nickname: this.nickname,
+      profileImageURL: this.profileImageURL,
+      lastLoginAt: this.lastLoginAt,
+      uniqueId: this.uniqueId,
+    };
   }
 }
