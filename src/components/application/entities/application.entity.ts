@@ -72,13 +72,14 @@ export class ApplicationEntity implements ITypeORMEntityHelper {
   }
 
   get metadata(): IApplicationEntity {
+    console.log(this);
     return {
       _id: this._id,
       name: this.name,
       description: this.description,
       icon: this.icon,
       endpoint: this.endpoint,
-      owner: this.owner.metadata,
+      owner: this.owner?.metadata,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };
