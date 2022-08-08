@@ -11,6 +11,7 @@ import {
 import { AuthModule } from './components/auth/auth.module';
 import { UserModule } from './components/user/user.module';
 import { ApplicationModule } from './components/application/application.module';
+import { FunctionModule } from './components/function/function.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ApplicationModule } from './components/application/application.module';
     AuthModule,
     UserModule,
     ApplicationModule,
+    FunctionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
