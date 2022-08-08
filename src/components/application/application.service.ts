@@ -80,10 +80,18 @@ export class ApplicationService {
   }
 
   async deleteApplication(owner: IUserEntity, endpoint: string) {
-    const myApplication = await this.getMyApplications(owner, endpoint);
-    if (myApplication.length !== 1) {
-      throw new ApplicationNotFoundException();
+    let application: ApplicationEntity = null;
+    {
+      const myApplication = await this.getMyApplications(owner, endpoint);
+      if (myApplication.length !== 1) {
+        throw new ApplicationNotFoundException();
+      }
+      application = myApplication[0];
     }
+
+    // TODO
+    // Application 을 삭제하는 경우, function 도 삭제해야함
+    await this.applicationRepository.softDelete(application._id);
   }
 
   async getMyApplications(owner: IUserEntity, endpoint?: string) {
@@ -101,6 +109,7 @@ export class ApplicationService {
       where: {
         endpoint,
       },
+      withDeleted: true,
     });
 
     return !tmpApp;
