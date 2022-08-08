@@ -26,3 +26,16 @@ export class EndpointAlreadyExistsException extends HttpException {
     );
   }
 }
+
+export class ApplicationNotFoundException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.APP_NOT_FOUND,
+        message: 'Application not found',
+        data: {},
+      },
+      HttpStatus.NOT_FOUND,
+    );
+  }
+}

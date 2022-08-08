@@ -29,6 +29,20 @@ export class AuthController {
     return this.loginAndMakeResponse(req.user);
   }
 
+  @Get('/google')
+  @HttpCode(200)
+  @UseGuards(AuthGuard('google'))
+  loginWithGoogle() {
+    return HttpStatus.OK;
+  }
+
+  @Get('/google/callback')
+  @HttpCode(200)
+  @UseGuards(AuthGuard('google'))
+  async loginWithGoogleCallback(@Req() req): Promise<ILoginResponse> {
+    return this.loginAndMakeResponse(req.user);
+  }
+
   private loginAndMakeResponse(payload: any): ILoginResponse {
     const { user, isNewUser } = payload as {
       user: UserEntity;
