@@ -1,4 +1,10 @@
-import { IsEnum, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { EHttpMethod } from '../../../common/enums/EHttpMethod';
 
 export class CreateFunctionDto {

@@ -11,6 +11,7 @@ import { EHttpMethod } from '../../../common/enums/EHttpMethod';
 import { ApplicationEntity } from 'src/components/application/entities/application.entity';
 import { UserEntity } from '../../user/entities/user.entity';
 import IFunction from '../interfaces/IFunction';
+import { CreateFunctionDto } from '../dto/create-function.dto';
 
 @Entity('spf_functions')
 export class FunctionEntity implements ITypeORMEntityHelper {
@@ -56,6 +57,12 @@ export class FunctionEntity implements ITypeORMEntityHelper {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  applyFromCreateFunctionDto(dto: CreateFunctionDto) {
+    this.name = dto.name;
+    this.endpoint = dto.endpoint;
+    this.httpMethod = dto.httpMethod;
+  }
 
   get metadata(): IFunction {
     return {
