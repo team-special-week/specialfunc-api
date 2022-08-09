@@ -26,3 +26,16 @@ export class EndpointOrMethodExistsException extends HttpException {
     );
   }
 }
+
+export class EndpointNotValidException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.ENDPOINT_NOT_VALID,
+        message: 'Endpoint is not valid.',
+        data: {},
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}

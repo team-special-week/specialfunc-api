@@ -11,6 +11,7 @@ import { ApplicationNotFoundException } from '../application/exceptions/applicat
 import { IApplicationEntity } from '../application/interfaces/IAppliationEntity';
 import { EHttpMethod } from '../../common/enums/EHttpMethod';
 import {
+  EndpointNotValidException,
   EndpointOrMethodExistsException,
   ExceedFunctionCountException,
 } from './exceptions/function.exceptions';
@@ -45,6 +46,11 @@ export class FunctionService {
       // endpoint 를 지정하지 않은 경우
       if (!appEndpoint) {
         throw new ApplicationNotFoundException();
+      }
+
+      // endpoint 의 regexp 검사
+      if (!this.isEndpointValid(dto.endpoint)) {
+        throw new EndpointNotValidException();
       }
 
       // 내 Application 중 해당 endpoint 를 찾을 수 없는 경우
@@ -113,5 +119,26 @@ export class FunctionService {
     );
   }
 
-  endpointRebase(endpoint: string) {}
+  isEndpointValid(endpoint: string) {
+    // 공백 제거
+    endpoint = endpoint.trim();
+
+    // 첫 슬레시 제거
+    if (endpoint[0] === '/') {
+      endpoint = endpoint.slice(1, endpoint.length);
+    }
+
+    const element = endpoint.split('/');
+    for (const el of element) {
+      if (el.length === 0) {
+        return false;
+      }
+
+      if (!/^\/[a-zA-Z\d-\*]*/g.test(`/${el}`)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }
