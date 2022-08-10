@@ -39,3 +39,16 @@ export class EndpointNotValidException extends HttpException {
     );
   }
 }
+
+export class FunctionNotFoundException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.FUNCTION_NOT_FOUND,
+        message: 'Function not found',
+        data: {},
+      },
+      HttpStatus.NOT_FOUND,
+    );
+  }
+}

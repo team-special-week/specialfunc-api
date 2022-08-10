@@ -39,3 +39,16 @@ export class ApplicationNotFoundException extends HttpException {
     );
   }
 }
+
+export class DeletedApplicationException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.DELETED_APPLICATION,
+        message: 'Deleted application',
+        data: {},
+      },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}

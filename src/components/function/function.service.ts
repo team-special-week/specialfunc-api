@@ -7,13 +7,17 @@ import { ApplicationService } from '../application/application.service';
 import { IUserEntity } from '../user/interfaces/IUserEntity';
 import { CreateFunctionDto } from './dto/create-function.dto';
 import { ApplicationEntity } from '../application/entities/application.entity';
-import { ApplicationNotFoundException } from '../application/exceptions/application.exceptions';
+import {
+  ApplicationNotFoundException,
+  DeletedApplicationException,
+} from '../application/exceptions/application.exceptions';
 import { IApplicationEntity } from '../application/interfaces/IAppliationEntity';
 import { EHttpMethod } from '../../common/enums/EHttpMethod';
 import {
   EndpointNotValidException,
   EndpointOrMethodExistsException,
   ExceedFunctionCountException,
+  FunctionNotFoundException,
 } from './exceptions/function.exceptions';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FUNCTION_COUNT } from '../../common/constants/policy.constant';
@@ -102,6 +106,54 @@ export class FunctionService {
     return savedEntity.metadata;
   }
 
+  async updateFunction(
+    owner: IUserEntity,
+    dto: CreateFunctionDto,
+    funcUUID: string,
+  ) {
+    let funcEntity: FunctionEntity = null;
+    {
+      const tmp = await this.getAllFunctions({
+        owner: { _id: owner._id },
+        uuid: funcUUID,
+      });
+
+      if (tmp.length === 1) {
+        funcEntity = tmp[0];
+      } else {
+        throw new FunctionNotFoundException();
+      }
+    }
+
+    {
+      // 애플리케이션이 삭제된 경우
+      if (funcEntity.application.deletedAt !== null) {
+        throw new DeletedApplicationException();
+      }
+
+      // Endpoint 형태에 대한 유효성 검증
+      if (!this.isEndpointValid(dto.endpoint)) {
+        throw new EndpointNotValidException();
+      }
+
+      // 해당 Endpoint 의 존재 여부 확인
+      if (dto.endpoint !== funcEntity.endpoint) {
+        if (
+          !(await this.isEndpointAndMethodAvailable(
+            funcEntity.application,
+            dto.endpoint,
+            dto.httpMethod,
+          ))
+        ) {
+          throw new EndpointOrMethodExistsException();
+        }
+      }
+    }
+
+    funcEntity.applyFromCreateFunctionDto(dto);
+    return (await this.functionRepository.save(funcEntity)).metadata;
+  }
+
   async isEndpointAndMethodAvailable(
     app: IApplicationEntity,
     endpoint: string,
@@ -110,6 +162,7 @@ export class FunctionService {
     const allFunctions = await this.getAllFunctions({
       application: { _id: app._id },
     });
+    console.log(allFunctions);
 
     return (
       allFunctions.filter(

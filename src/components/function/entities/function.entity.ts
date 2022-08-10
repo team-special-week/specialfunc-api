@@ -22,6 +22,7 @@ export class FunctionEntity implements ITypeORMEntityHelper {
     name: 'func_uuid',
     type: 'char',
     length: 32,
+    unique: true,
   })
   uuid: string;
 
@@ -72,6 +73,7 @@ export class FunctionEntity implements ITypeORMEntityHelper {
       httpMethod: this.httpMethod,
       application: this.application?.metadata,
       owner: this.owner?.metadata,
+      uuid: this.uuid,
     };
   }
 }

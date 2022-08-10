@@ -3,7 +3,7 @@ import {
   Controller,
   Get,
   Param,
-  Post,
+  Post, Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -25,6 +25,16 @@ export class FunctionController {
     @Param('appEndpoint') appEndpoint: string,
   ) {
     return this.functionService.createFunction(user, dto, appEndpoint);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('/:funcUUID')
+  async updateFunction(
+    @CurrentUser() user: IUserEntity,
+    @Body() dto: CreateFunctionDto,
+    @Param('funcUUID') funcUUID: string,
+  ) {
+    return this.functionService.updateFunction(user, dto, funcUUID);
   }
 
   @UseGuards(JwtAuthGuard)
