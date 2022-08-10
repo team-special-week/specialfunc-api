@@ -47,7 +47,7 @@ export class AuthService {
 
   login(user: UserEntity) {
     return this.jwtService.sign({
-      id: user.id,
+      id: user._id,
       provider: user.provider,
     });
   }

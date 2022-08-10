@@ -19,7 +19,7 @@ import { FunctionEntity } from '../../function/entities/function.entity';
 @Entity('spf_users')
 export class UserEntity implements ITypeORMEntityHelper {
   @PrimaryGeneratedColumn()
-  id: number;
+  _id: number;
 
   @Index('idx_unique_id', { unique: true })
   @Column({
@@ -100,7 +100,7 @@ export class UserEntity implements ITypeORMEntityHelper {
 
   get metadata(): IUserEntity {
     return {
-      id: this.id,
+      _id: this._id,
       provider: this.provider,
       email: this.email,
       nickname: this.nickname,

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FunctionEntity } from './entities/function.entity';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { UserService } from '../user/user.service';
 import { ApplicationService } from '../application/application.service';
 import { IUserEntity } from '../user/interfaces/IUserEntity';
@@ -27,11 +27,9 @@ export class FunctionService {
     private readonly applicationService: ApplicationService,
   ) {}
 
-  async getAllFunctions(application: IApplicationEntity) {
+  async getAllFunctions(options: FindOptionsWhere<FunctionEntity>) {
     return this.functionRepository.find({
-      where: {
-        application: { _id: application._id },
-      },
+      where: options,
       relations: ['application'],
     });
   }
@@ -65,7 +63,9 @@ export class FunctionService {
       application = myApplications[0];
 
       // 생성 가능한 함수 개수를 초과한 경우
-      const functions = await this.getAllFunctions(application);
+      const functions = await this.getAllFunctions({
+        application: { _id: application._id },
+      });
       if (functions.length >= MAX_FUNCTION_COUNT) {
         throw new ExceedFunctionCountException();
       }
@@ -107,7 +107,9 @@ export class FunctionService {
     endpoint: string,
     httpMethod: EHttpMethod,
   ): Promise<boolean> {
-    const allFunctions = await this.getAllFunctions(app);
+    const allFunctions = await this.getAllFunctions({
+      application: { _id: app._id },
+    });
 
     return (
       allFunctions.filter(
@@ -134,7 +136,7 @@ export class FunctionService {
         return false;
       }
 
-      if (!/^\/[a-zA-Z\d-\*]*/g.test(`/${el}`)) {
+      if (!/^\/[a-zA-Z\d-*]*/g.test(`/${el}`)) {
         return false;
       }
     }

@@ -40,9 +40,6 @@ export class ApplicationEntity implements ITypeORMEntityHelper {
   })
   icon: string;
 
-  @Index('idx_endpoint', {
-    unique: true,
-  })
   @Column({
     unique: true,
     name: 'app_endpoint',
