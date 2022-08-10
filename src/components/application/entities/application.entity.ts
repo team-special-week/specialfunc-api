@@ -6,12 +6,14 @@ import {
   Entity,
   Index,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { CreateApplicationDto } from '../dto/create-application.dto';
 import { ITypeORMEntityHelper } from '../../../common/interfaces/ITypeORMEntityHelper';
 import { IApplicationEntity } from '../interfaces/IAppliationEntity';
+import { FunctionEntity } from 'src/components/function/entities/function.entity';
 
 @Entity('spf_applications')
 export class ApplicationEntity implements ITypeORMEntityHelper {
@@ -38,9 +40,6 @@ export class ApplicationEntity implements ITypeORMEntityHelper {
   })
   icon: string;
 
-  @Index('idx_endpoint', {
-    unique: true,
-  })
   @Column({
     unique: true,
     name: 'app_endpoint',
@@ -49,8 +48,9 @@ export class ApplicationEntity implements ITypeORMEntityHelper {
   })
   endpoint: string;
 
-  // FK 설정은 아래에서...
-  // 당장 생각나는건 Functions, Owner 정도
+  @OneToMany(() => FunctionEntity, (func) => func.application)
+  functions: FunctionEntity[];
+
   @Index('idx_owner')
   @ManyToOne(() => UserEntity, (user) => user.myApplications)
   owner: UserEntity;
@@ -72,7 +72,6 @@ export class ApplicationEntity implements ITypeORMEntityHelper {
   }
 
   get metadata(): IApplicationEntity {
-    console.log(this);
     return {
       _id: this._id,
       name: this.name,
