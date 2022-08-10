@@ -14,7 +14,7 @@ export class UserService {
   findUserByIUserEntity(user: IUserEntity) {
     return this.findUser({
       where: {
-        id: user.id,
+        _id: user._id,
       },
     });
   }

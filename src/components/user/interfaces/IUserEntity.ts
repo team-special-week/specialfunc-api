@@ -1,7 +1,7 @@
 import { EAuthProvider } from '../../auth/enums/EAuthProvider';
 
 export interface IUserEntity {
-  id?: number;
+  _id?: number;
   uniqueId?: string;
   provider?: EAuthProvider;
   nickname?: string;

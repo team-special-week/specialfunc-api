@@ -14,11 +14,12 @@ import { ILoginResult } from '../../auth/interfaces/login.interfaces';
 import { IUserEntity } from '../interfaces/IUserEntity';
 import { ApplicationEntity } from 'src/components/application/entities/application.entity';
 import { BlockedUserException } from '../../auth/exceptions/auth.exceptions';
+import { FunctionEntity } from '../../function/entities/function.entity';
 
 @Entity('spf_users')
 export class UserEntity implements ITypeORMEntityHelper {
   @PrimaryGeneratedColumn()
-  id: number;
+  _id: number;
 
   @Index('idx_unique_id', { unique: true })
   @Column({
@@ -72,6 +73,9 @@ export class UserEntity implements ITypeORMEntityHelper {
   @OneToMany(() => ApplicationEntity, (app) => app.owner)
   myApplications: ApplicationEntity[];
 
+  @OneToMany(() => FunctionEntity, (func) => func.owner)
+  myFunctions: FunctionEntity[];
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -96,7 +100,7 @@ export class UserEntity implements ITypeORMEntityHelper {
 
   get metadata(): IUserEntity {
     return {
-      id: this.id,
+      _id: this._id,
       provider: this.provider,
       email: this.email,
       nickname: this.nickname,

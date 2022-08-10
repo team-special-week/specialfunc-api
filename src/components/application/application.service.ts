@@ -97,7 +97,7 @@ export class ApplicationService {
   async getMyApplications(owner: IUserEntity, endpoint?: string) {
     return this.applicationRepository.find({
       where: {
-        owner: owner,
+        owner: { _id: owner._id },
         endpoint: endpoint ? endpoint : undefined,
       },
     });
