@@ -1,7 +1,11 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { FunctionService } from '../function/function.service';
 import * as fs from 'fs';
-import { PROJECT_DIRECTORY } from 'src/common/constants/policy.constant';
+import * as ncp from 'ncp';
+import {
+  PROJECT_DIRECTORY,
+  WORK_DIRECTORY,
+} from 'src/common/constants/policy.constant';
 import * as path from 'path';
 
 @Injectable()
@@ -59,6 +63,65 @@ export class RunnerService {
   }
 
   async buildFunctionProject(uuid: string) {
+    return new Promise<void>(async (resolve, reject) => {
+      const workDirPath = path.join(WORK_DIRECTORY, uuid);
+      const folderPath = path.join(PROJECT_DIRECTORY, uuid);
 
+      try {
+        if (!fs.existsSync(workDirPath)) {
+          // 폴더 생성
+          fs.mkdirSync(workDirPath, { recursive: true });
+        }
+
+        {
+          // Function 카피
+          const copyFuncAsync = new Promise((resolve, reject) => {
+            ncp(
+              folderPath,
+              path.join(workDirPath, 'function'),
+              { clobber: true },
+              (err) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(true);
+                }
+              },
+            );
+          });
+
+          // runner-host 카피
+          const copyRunnerHostAsync = new Promise((resolve, reject) => {
+            ncp(
+              path.join(PROJECT_DIRECTORY, 'runner-host'),
+              path.join(workDirPath, 'runner-host'),
+              { clobber: true },
+              (err) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(true);
+                }
+              },
+            );
+          });
+
+          await copyFuncAsync;
+          await copyRunnerHostAsync;
+        }
+
+        // Dockerfile 생성
+        {
+          const data = 'FROM ubuntu:latest \n' + 'MAINTAINER <5252bb@daum.net>';
+
+          fs.writeFileSync(path.join(workDirPath, 'Dockerfile'), data);
+        }
+
+        resolve();
+      } catch (ex) {
+        console.error(ex);
+        reject();
+      }
+    });
   }
 }

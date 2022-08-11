@@ -163,6 +163,12 @@ export class FunctionService {
     return (await this.functionRepository.save(funcEntity)).metadata;
   }
 
+  async buildFunctionProject(funcUUID: string) {
+    // TODO
+    // 검증이나 이런거 일단 안했는데 해야함
+    await this.runnerService.buildFunctionProject(funcUUID);
+  }
+
   async deleteFunction(owner: IUserEntity, funcUUID: string) {
     const func = await this.functionRepository.findOne({
       where: {

@@ -51,6 +51,12 @@ export class FunctionController {
     return this.functionService.createFunction(user, dto, appEndpoint);
   }
 
+  //@UseGuards(JwtAuthGuard)
+  @Post('/build/:funcUUID')
+  async buildFunction(@Param('funcUUID') funcUUID: string) {
+    return this.functionService.buildFunctionProject(funcUUID);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('/:funcUUID')
   async getOneFunction(
