@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FunctionEntity } from './entities/function.entity';
 import { FindOptionsWhere, Repository } from 'typeorm';
@@ -21,6 +21,7 @@ import {
 } from './exceptions/function.exceptions';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FUNCTION_COUNT } from '../../common/constants/policy.constant';
+import { RunnerService } from '../runner/runner.service';
 
 @Injectable()
 export class FunctionService {
@@ -29,6 +30,8 @@ export class FunctionService {
     private readonly functionRepository: Repository<FunctionEntity>,
     private readonly userService: UserService,
     private readonly applicationService: ApplicationService,
+    @Inject(forwardRef(() => RunnerService))
+    private readonly runnerService: RunnerService,
   ) {}
 
   async getAllFunctions(options: FindOptionsWhere<FunctionEntity>) {
@@ -92,6 +95,12 @@ export class FunctionService {
       }
     }
 
+    const uuid = (uuidv4() as string).replace(/-/gi, '');
+    {
+      // 프로젝트 생성
+      await this.runnerService.generateFunctionProject(uuid);
+    }
+
     let savedEntity: FunctionEntity;
     {
       // 새 엔티티 저장
@@ -99,7 +108,7 @@ export class FunctionService {
       funcEntity.applyFromCreateFunctionDto(dto);
       funcEntity.application = application;
       funcEntity.owner = user;
-      funcEntity.uuid = (uuidv4() as string).replace(/-/gi, '');
+      funcEntity.uuid = uuid;
       savedEntity = await this.functionRepository.save(funcEntity);
     }
 
