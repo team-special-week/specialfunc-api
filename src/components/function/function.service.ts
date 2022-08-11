@@ -154,6 +154,27 @@ export class FunctionService {
     return (await this.functionRepository.save(funcEntity)).metadata;
   }
 
+  async deleteFunction(owner: IUserEntity, funcUUID: string) {
+    const func = await this.functionRepository.findOne({
+      where: {
+        uuid: funcUUID,
+        owner: { _id: owner._id },
+      },
+    });
+
+    if (func) {
+      // TODO
+      // Runner 에게 function 프로젝트 삭제를 요청
+
+      // Function 삭제
+      await this.functionRepository.delete({
+        uuid: funcUUID,
+      });
+    } else {
+      throw new FunctionNotFoundException();
+    }
+  }
+
   async isEndpointAndMethodAvailable(
     app: IApplicationEntity,
     endpoint: string,
@@ -162,7 +183,6 @@ export class FunctionService {
     const allFunctions = await this.getAllFunctions({
       application: { _id: app._id },
     });
-    console.log(allFunctions);
 
     return (
       allFunctions.filter(
