@@ -2,8 +2,10 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { FunctionService } from '../function/function.service';
 import * as fs from 'fs';
 import * as ncp from 'ncp';
+import * as child_process from 'child_process';
 import {
   PROJECT_DIRECTORY,
+  TEMPLATE_DIRECTORY,
   WORK_DIRECTORY,
 } from 'src/common/constants/policy.constant';
 import * as path from 'path';
@@ -15,113 +17,82 @@ export class RunnerService {
     private readonly functionService: FunctionService,
   ) {}
 
-  async generateFunctionProject(uuid: string) {
-    return new Promise<void>(async (resolve, reject) => {
-      const folderPath = path.join(PROJECT_DIRECTORY, uuid);
-
-      try {
-        if (!fs.existsSync(folderPath)) {
-          // 폴더 생성
-          fs.mkdirSync(folderPath, { recursive: true });
-
-          // package.json 파일 생성
-          {
-            const data = {
-              name: uuid,
-              version: '1.0.0',
-              description: '',
-              main: 'index.js',
-              scripts: {},
-              keywords: [],
-              author: '',
-              license: 'ISC',
-            };
-            fs.writeFileSync(
-              path.join(folderPath, 'package.json'),
-              JSON.stringify(data),
-            );
-          }
-
-          // main.js 파일 생성
-          {
-            const data =
-              'exports.main = async function(req) {' +
-              'return "Hello world!"' +
-              '}';
-            fs.writeFileSync(path.join(folderPath, 'main.js'), data);
-          }
-
-          resolve();
-        } else {
-          reject();
-        }
-      } catch (ex) {
-        console.error(ex);
-        reject();
-      }
-    });
-  }
-
   async buildFunctionProject(uuid: string) {
     return new Promise<void>(async (resolve, reject) => {
       const workDirPath = path.join(WORK_DIRECTORY, uuid);
-      const folderPath = path.join(PROJECT_DIRECTORY, uuid);
+      const projectDirectory = path.join(PROJECT_DIRECTORY, uuid);
 
       try {
         if (!fs.existsSync(workDirPath)) {
-          // 폴더 생성
+          // Work directory 생성
           fs.mkdirSync(workDirPath, { recursive: true });
         }
 
         {
-          // Function 카피
-          const copyFuncAsync = new Promise((resolve, reject) => {
-            ncp(
-              folderPath,
-              path.join(workDirPath, 'function'),
-              { clobber: true },
-              (err) => {
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve(true);
-                }
-              },
-            );
-          });
+          await Promise.all([
+            // Function Project 복사
+            this.copy(projectDirectory, path.join(workDirPath, 'function')),
 
-          // runner-host 카피
-          const copyRunnerHostAsync = new Promise((resolve, reject) => {
-            ncp(
-              path.join(PROJECT_DIRECTORY, 'runner-host'),
+            // runner-host 프로젝트 복사
+            this.copy(
+              path.join(TEMPLATE_DIRECTORY, 'runner-host'),
               path.join(workDirPath, 'runner-host'),
-              { clobber: true },
-              (err) => {
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve(true);
-                }
-              },
-            );
-          });
+            ),
 
-          await copyFuncAsync;
-          await copyRunnerHostAsync;
-        }
+            // Dockerfile 생성
+            this.promisify(() => {
+              fs.copyFileSync(
+                path.join(TEMPLATE_DIRECTORY, 'Dockerfile'),
+                path.join(workDirPath, 'Dockerfile'),
+              );
+            }),
+          ]);
 
-        // Dockerfile 생성
-        {
-          const data = 'FROM ubuntu:latest \n' + 'MAINTAINER <5252bb@daum.net>';
-
-          fs.writeFileSync(path.join(workDirPath, 'Dockerfile'), data);
+          // docker build 실행
+          await this.exec(
+            `cd ${workDirPath} && docker build --no-cache -t ${uuid}:latest .`,
+          );
         }
 
         resolve();
       } catch (ex) {
-        console.error(ex);
-        reject();
+        reject(ex);
       }
+    });
+  }
+
+  private promisify(func: () => void): Promise<void> {
+    return new Promise<void>(async (resolve, reject) => {
+      try {
+        await func();
+        resolve();
+      } catch (ex) {
+        reject(ex);
+      }
+    });
+  }
+
+  private copy(src: string, dest: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      ncp(src, dest, { clobber: true }, (err) => {
+        if (err) {
+          reject();
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  private exec(command: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      child_process.exec(command, (err, stdout, stderr) => {
+        if (err) {
+          reject(stderr);
+        } else {
+          resolve(stdout);
+        }
+      });
     });
   }
 }

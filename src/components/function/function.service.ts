@@ -96,11 +96,6 @@ export class FunctionService {
     }
 
     const uuid = (uuidv4() as string).replace(/-/gi, '');
-    {
-      // 프로젝트 생성
-      await this.runnerService.generateFunctionProject(uuid);
-    }
-
     let savedEntity: FunctionEntity;
     {
       // 새 엔티티 저장
