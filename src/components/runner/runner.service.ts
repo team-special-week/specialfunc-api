@@ -1,14 +1,13 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { FunctionService } from '../function/function.service';
-import * as fs from 'fs';
-import * as ncp from 'ncp';
-import * as child_process from 'child_process';
+import { EFunctionStatus } from '../../common/enums/EFunctionStatus';
 import {
-  PROJECT_DIRECTORY,
-  TEMPLATE_DIRECTORY,
-  WORK_DIRECTORY,
-} from 'src/common/constants/policy.constant';
-import * as path from 'path';
+  buildFunctionProject,
+  copyFunctionProject,
+  createWorkspace,
+  exec,
+  removeWorkspace,
+} from '../../libs/RunnerHelper';
 
 @Injectable()
 export class RunnerService {
@@ -17,82 +16,48 @@ export class RunnerService {
     private readonly functionService: FunctionService,
   ) {}
 
-  async buildFunctionProject(uuid: string) {
-    return new Promise<void>(async (resolve, reject) => {
-      const workDirPath = path.join(WORK_DIRECTORY, uuid);
-      const projectDirectory = path.join(PROJECT_DIRECTORY, uuid);
+  async build(uuid: string) {
+    // 워크스페이스 생성
+    await createWorkspace(uuid);
 
-      try {
-        if (!fs.existsSync(workDirPath)) {
-          // Work directory 생성
-          fs.mkdirSync(workDirPath, { recursive: true });
-        }
+    // 함수 복사
+    await copyFunctionProject(uuid);
 
-        {
-          await Promise.all([
-            // Function Project 복사
-            this.copy(projectDirectory, path.join(workDirPath, 'function')),
+    // 빌드 시작 전, 디비에 상태 변경
+    await this.updateFunctionStatus(uuid, EFunctionStatus.BUILD_PROCESS);
 
-            // runner-host 프로젝트 복사
-            this.copy(
-              path.join(TEMPLATE_DIRECTORY, 'runner-host'),
-              path.join(workDirPath, 'runner-host'),
-            ),
-
-            // Dockerfile 생성
-            this.promisify(() => {
-              fs.copyFileSync(
-                path.join(TEMPLATE_DIRECTORY, 'Dockerfile'),
-                path.join(workDirPath, 'Dockerfile'),
-              );
-            }),
-          ]);
-
-          // docker build 실행
-          await this.exec(
-            `cd ${workDirPath} && docker build --no-cache -t ${uuid}:latest .`,
-          );
-        }
-
-        resolve();
-      } catch (ex) {
-        reject(ex);
-      }
-    });
-  }
-
-  private promisify(func: () => void): Promise<void> {
-    return new Promise<void>(async (resolve, reject) => {
-      try {
-        await func();
-        resolve();
-      } catch (ex) {
-        reject(ex);
-      }
-    });
-  }
-
-  private copy(src: string, dest: string): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      ncp(src, dest, { clobber: true }, (err) => {
-        if (err) {
-          reject();
-        } else {
-          resolve();
-        }
+    // 도커 빌드 요청
+    buildFunctionProject(uuid)
+      .then(() => {
+        // 도커 빌드 완료, 함수 재시동
+        return this.reload(uuid);
+      })
+      .then(async () => {
+        // 재시동 성공
+        await this.updateFunctionStatus(uuid, EFunctionStatus.RUNNING);
+      })
+      .catch(async (ex) => {
+        // 빌드 또는 재시동 실패
+        console.error(ex);
+        await this.updateFunctionStatus(uuid, EFunctionStatus.FAILURE);
+      })
+      .then(() => {
+        // 워크스페이스 삭제
+        return removeWorkspace(uuid);
       });
-    });
   }
 
-  private exec(command: string): Promise<string> {
-    return new Promise<string>((resolve, reject) => {
-      child_process.exec(command, (err, stdout, stderr) => {
-        if (err) {
-          reject(stderr);
-        } else {
-          resolve(stdout);
-        }
-      });
-    });
+  async updateFunctionStatus(uuid: string, status) {
+    return this.functionService.updateFunctionStatus(uuid, status);
+  }
+
+  async reload(uuid: string) {
+    try {
+      // STOP, RM 은 첫 실행 시 안될 수 있음
+      await exec(`docker stop ${uuid}`);
+      await exec(`docker rm ${uuid}`);
+    } catch (ex) {}
+
+    await exec(`docker run -d -p 3000 --name ${uuid} ${uuid}:latest`);
   }
 }

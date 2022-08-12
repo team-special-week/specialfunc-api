@@ -82,6 +82,7 @@ export class FunctionEntity implements ITypeORMEntityHelper {
       application: this.application?.metadata,
       owner: this.owner?.metadata,
       uuid: this.uuid,
+      status: this.status,
     };
   }
 }

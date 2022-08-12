@@ -52,3 +52,16 @@ export class FunctionNotFoundException extends HttpException {
     );
   }
 }
+
+export class BuildAlreadyRunningException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.BUILD_ALREADY_RUNNING,
+        message: 'Build already running.',
+        data: {},
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}

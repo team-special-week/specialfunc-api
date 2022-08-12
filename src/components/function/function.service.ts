@@ -14,6 +14,7 @@ import {
 import { IApplicationEntity } from '../application/interfaces/IAppliationEntity';
 import { EHttpMethod } from '../../common/enums/EHttpMethod';
 import {
+  BuildAlreadyRunningException,
   EndpointNotValidException,
   EndpointOrMethodExistsException,
   ExceedFunctionCountException,
@@ -159,10 +160,32 @@ export class FunctionService {
     return (await this.functionRepository.save(funcEntity)).metadata;
   }
 
-  async buildFunctionProject(funcUUID: string) {
-    // TODO
-    // 검증이나 이런거 일단 안했는데 해야함
-    await this.runnerService.buildFunctionProject(funcUUID);
+  async buildFunctionProject(owner: IUserEntity, funcUUID: string) {
+    let fun: FunctionEntity = null;
+    {
+      const func = await this.getAllFunctions({
+        owner: { _id: owner._id },
+        uuid: funcUUID,
+      });
+
+      if (func.length === 1) {
+        fun = func[0];
+      } else {
+        throw new FunctionNotFoundException();
+      }
+    }
+
+    // 이미 빌드중인 경우
+    if (fun.status === EFunctionStatus.BUILD_PROCESS) {
+      throw new BuildAlreadyRunningException();
+    }
+
+    // 함수 빌드
+    await this.runnerService.build(fun.uuid);
+    const metadata = fun.metadata;
+    metadata.status = EFunctionStatus.BUILD_PROCESS;
+
+    return metadata;
   }
 
   async deleteFunction(owner: IUserEntity, funcUUID: string) {
@@ -186,7 +209,16 @@ export class FunctionService {
     }
   }
 
-  async updateFunctionStatus(funcUUID: string, status: EFunctionStatus) {}
+  async updateFunctionStatus(funcUUID: string, status: EFunctionStatus) {
+    return this.functionRepository.update(
+      {
+        uuid: funcUUID,
+      },
+      {
+        status,
+      },
+    );
+  }
 
   async isEndpointAndMethodAvailable(
     app: IApplicationEntity,

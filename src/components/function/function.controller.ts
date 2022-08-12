@@ -51,10 +51,13 @@ export class FunctionController {
     return this.functionService.createFunction(user, dto, appEndpoint);
   }
 
-  //@UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('/build/:funcUUID')
-  async buildFunction(@Param('funcUUID') funcUUID: string) {
-    return this.functionService.buildFunctionProject(funcUUID);
+  async buildFunction(
+    @CurrentUser() user: IUserEntity,
+    @Param('funcUUID') funcUUID: string,
+  ) {
+    return this.functionService.buildFunctionProject(user, funcUUID);
   }
 
   @UseGuards(JwtAuthGuard)
