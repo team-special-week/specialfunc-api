@@ -12,6 +12,7 @@ import { ApplicationEntity } from 'src/components/application/entities/applicati
 import { UserEntity } from '../../user/entities/user.entity';
 import IFunction from '../interfaces/IFunction';
 import { CreateFunctionDto } from '../dto/create-function.dto';
+import { EFunctionStatus } from '../../../common/enums/EFunctionStatus';
 
 @Entity('spf_functions')
 export class FunctionEntity implements ITypeORMEntityHelper {
@@ -46,6 +47,13 @@ export class FunctionEntity implements ITypeORMEntityHelper {
     enum: EHttpMethod,
   })
   httpMethod: EHttpMethod;
+
+  @Column({
+    name: 'func_status',
+    type: 'enum',
+    enum: EFunctionStatus,
+  })
+  status: EFunctionStatus;
 
   @ManyToOne(() => ApplicationEntity, (app) => app.functions)
   application: ApplicationEntity;

@@ -22,6 +22,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FUNCTION_COUNT } from '../../common/constants/policy.constant';
 import { RunnerService } from '../runner/runner.service';
+import { EFunctionStatus } from '../../common/enums/EFunctionStatus';
 
 @Injectable()
 export class FunctionService {
@@ -184,6 +185,8 @@ export class FunctionService {
       throw new FunctionNotFoundException();
     }
   }
+
+  async updateFunctionStatus(funcUUID: string, status: EFunctionStatus) {}
 
   async isEndpointAndMethodAvailable(
     app: IApplicationEntity,
