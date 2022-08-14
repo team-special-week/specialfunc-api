@@ -97,7 +97,7 @@ export class AuthService {
     provider: EAuthProvider,
   ): Promise<ILoginResult> {
     let response: AxiosResponse = null;
-    {
+    try {
       if (provider === EAuthProvider.GOOGLE) {
         response = await axios.get(
           `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${token}`,
@@ -111,6 +111,8 @@ export class AuthService {
           },
         });
       }
+    } catch (ex) {
+      throw new UnauthorizedException();
     }
 
     if (response === null || response.status !== 200) {
