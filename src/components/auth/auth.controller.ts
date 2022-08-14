@@ -1,13 +1,5 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthGuard } from '@nestjs/passport';
 import { UserEntity } from '../user/entities/user.entity';
 import { ILoginResponse } from './interfaces/login.interfaces';
 
@@ -17,30 +9,16 @@ export class AuthController {
 
   @Get('/kakao')
   @HttpCode(200)
-  @UseGuards(AuthGuard('kakao'))
-  loginWithKakao() {
-    return HttpStatus.OK;
-  }
-
-  @Get('/kakao/callback')
-  @HttpCode(200)
-  @UseGuards(AuthGuard('kakao'))
-  async loginWithKakaoCallback(@Req() req): Promise<ILoginResponse> {
-    return this.loginAndMakeResponse(req.user);
+  async loginWithKakao(@Query('code') code: string): Promise<ILoginResponse> {
+    const validateResult = await this.authService.validateKakaoLogin(code);
+    return this.loginAndMakeResponse(validateResult);
   }
 
   @Get('/google')
   @HttpCode(200)
-  @UseGuards(AuthGuard('google'))
-  loginWithGoogle() {
-    return HttpStatus.OK;
-  }
-
-  @Get('/google/callback')
-  @HttpCode(200)
-  @UseGuards(AuthGuard('google'))
-  async loginWithGoogleCallback(@Req() req): Promise<ILoginResponse> {
-    return this.loginAndMakeResponse(req.user);
+  async loginWithGoogle(@Query('code') code: string): Promise<ILoginResponse> {
+    const validateResult = await this.authService.validateGoogleLogin(code);
+    return this.loginAndMakeResponse(validateResult);
   }
 
   private loginAndMakeResponse(payload: any): ILoginResponse {
