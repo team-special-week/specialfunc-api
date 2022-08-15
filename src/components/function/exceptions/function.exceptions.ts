@@ -78,3 +78,16 @@ export class NotZipFileException extends HttpException {
     );
   }
 }
+
+export class ReleaseHistoryNotFound extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.RELEASE_HISTORY_NOT_FOUND,
+        message: 'Release history not found',
+        data: {},
+      },
+      HttpStatus.NOT_FOUND,
+    );
+  }
+}

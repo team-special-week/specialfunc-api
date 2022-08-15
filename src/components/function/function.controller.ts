@@ -22,7 +22,6 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateFunctionDto } from './dto/create-function.dto';
 import { FunctionNotFoundException } from './exceptions/function.exceptions';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { functionMulterDiskOptions } from '../../common/options/function-multer.option';
 import { promisify } from '../../libs/RunnerHelper';
 import * as fs from 'fs';
 
@@ -62,7 +61,7 @@ export class FunctionController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('/build/:funcUUID')
+  @Post('/:funcUUID/build')
   @UseInterceptors(FileInterceptor('file'))
   async buildFunction(
     @CurrentUser() user: IUserEntity,
@@ -84,10 +83,24 @@ export class FunctionController {
         file.path,
       );
     } finally {
+      // 임시 파일 삭제
       promisify(() => {
         fs.rmSync(file.path, { force: true });
       }).then();
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('/:funcUUID/release-history')
+  async getReleaseHistory(
+    @CurrentUser() user: IUserEntity,
+    @Param('funcUUID') funcUUID: string,
+  ) {
+    if (!funcUUID) {
+      throw new FunctionNotFoundException();
+    }
+
+    return this.functionService.getReleaseHistory(user, funcUUID);
   }
 
   @UseGuards(JwtAuthGuard)

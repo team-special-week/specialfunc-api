@@ -1,6 +1,5 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { FunctionService } from '../function/function.service';
-import { EFunctionStatus } from '../../common/enums/EFunctionStatus';
 import {
   buildFunctionProject,
   copyFunctionProject,
@@ -8,12 +7,15 @@ import {
   exec,
   removeWorkspace,
 } from '../../libs/RunnerHelper';
+import { ReleaseHistoryService } from '../function/apps/release-history.service';
+import { EBuildStatus } from '../../common/enums/EBuildStatus';
 
 @Injectable()
 export class RunnerService {
   constructor(
     @Inject(forwardRef(() => FunctionService))
     private readonly functionService: FunctionService,
+    private readonly releaseHistoryService: ReleaseHistoryService,
   ) {}
 
   async build(uuid: string) {
@@ -23,23 +25,23 @@ export class RunnerService {
     // 함수 복사
     await copyFunctionProject(uuid);
 
-    // 빌드 시작 전, 디비에 상태 변경
-    await this.updateFunctionStatus(uuid, EFunctionStatus.BUILD_PROCESS);
-
     // 도커 빌드 요청
     buildFunctionProject(uuid)
-      .then(() => {
-        // 도커 빌드 완료, 함수 재시동
+      .then(async () => {
+        // 도커 이미지를 빌드했으므로, 기존 함수 DEPRECATED
+        await this.releaseHistoryService.deprecateReleaseHistory(uuid);
+
+        // 새 함수 리로드
         return this.reload(uuid);
       })
       .then(async () => {
         // 재시동 성공
-        await this.updateFunctionStatus(uuid, EFunctionStatus.RUNNING);
+        await this.updateFunctionStatus(uuid, EBuildStatus.WARM_START);
       })
       .catch(async (ex) => {
         // 빌드 또는 재시동 실패
         console.error(ex);
-        await this.updateFunctionStatus(uuid, EFunctionStatus.BUILD_FAILURE);
+        await this.updateFunctionStatus(uuid, EBuildStatus.BUILD_FAILURE);
       })
       .then(() => {
         // 워크스페이스 삭제
@@ -47,8 +49,11 @@ export class RunnerService {
       });
   }
 
-  async updateFunctionStatus(uuid: string, status) {
-    return this.functionService.updateFunctionStatus(uuid, status);
+  async updateFunctionStatus(uuid: string, status: EBuildStatus) {
+    return this.releaseHistoryService.updateLastReleaseHistoryStatus(
+      uuid,
+      status,
+    );
   }
 
   async reload(uuid: string) {

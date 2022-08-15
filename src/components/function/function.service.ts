@@ -23,10 +23,12 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FUNCTION_COUNT } from '../../common/constants/policy.constant';
 import { RunnerService } from '../runner/runner.service';
-import { EFunctionStatus } from '../../common/enums/EFunctionStatus';
 import * as fs from 'fs';
 import * as unzipper from 'unzipper';
 import * as path from 'path';
+import { ReleaseHistoryService } from './apps/release-history.service';
+import { EBuildStatus } from '../../common/enums/EBuildStatus';
+import IReleaseHistory from './interfaces/IReleaseHistory';
 
 @Injectable()
 export class FunctionService {
@@ -37,6 +39,7 @@ export class FunctionService {
     private readonly applicationService: ApplicationService,
     @Inject(forwardRef(() => RunnerService))
     private readonly runnerService: RunnerService,
+    private readonly releaseHistoryService: ReleaseHistoryService,
   ) {}
 
   async getAllFunctions(options: FindOptionsWhere<FunctionEntity>) {
@@ -182,9 +185,20 @@ export class FunctionService {
       }
     }
 
-    // 이미 빌드중인 경우
-    if (fun.status === EFunctionStatus.BUILD_PROCESS) {
+    // 마지막 빌드 기록을 보고 현재 빌드 상태를 확인
+    const lastReleaseHistory =
+      await this.releaseHistoryService.findLastReleaseHistory(funcUUID);
+    if (
+      lastReleaseHistory !== null &&
+      lastReleaseHistory.buildStatus === EBuildStatus.BUILD_PROCESS
+    ) {
       throw new BuildAlreadyRunningException();
+    } else {
+      const stat = fs.statSync(funcZipPath);
+      await this.releaseHistoryService.createReleaseHistory(
+        funcUUID,
+        stat.size,
+      );
     }
 
     // 함수 압축 해제
@@ -200,7 +214,6 @@ export class FunctionService {
         fs.rmSync(projectPath, { recursive: true, force: true });
 
         // 압축 해제
-        console.log(1);
         fs.createReadStream(funcZipPath)
           .pipe(unzipper.Extract({ path: projectPath }))
           .promise()
@@ -219,10 +232,26 @@ export class FunctionService {
 
     // 함수 빌드
     await this.runnerService.build(fun.uuid);
-    const metadata = fun.metadata;
-    metadata.status = EFunctionStatus.BUILD_PROCESS;
+    return fun.metadata;
+  }
 
-    return metadata;
+  async getReleaseHistory(
+    owner: IUserEntity,
+    funcUUID: string,
+  ): Promise<IReleaseHistory[]> {
+    const func = await this.functionRepository.findOne({
+      where: {
+        uuid: funcUUID,
+        owner: { _id: owner._id },
+      },
+      relations: ['releaseHistory'],
+    });
+
+    if (!func) {
+      throw new FunctionNotFoundException();
+    }
+
+    return func.releaseHistory.map((value) => value.metadata);
   }
 
   async deleteFunction(owner: IUserEntity, funcUUID: string) {
@@ -244,17 +273,6 @@ export class FunctionService {
     } else {
       throw new FunctionNotFoundException();
     }
-  }
-
-  async updateFunctionStatus(funcUUID: string, status: EFunctionStatus) {
-    return this.functionRepository.update(
-      {
-        uuid: funcUUID,
-      },
-      {
-        status,
-      },
-    );
   }
 
   async isEndpointAndMethodAvailable(

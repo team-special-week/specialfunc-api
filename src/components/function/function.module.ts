@@ -8,6 +8,7 @@ import { ApplicationModule } from '../application/application.module';
 import { RunnerModule } from '../runner/runner.module';
 import { MulterModule } from '@nestjs/platform-express';
 import * as path from 'path';
+import { ReleaseHistoryModule } from './apps/release-history.module';
 
 @Module({
   controllers: [FunctionController],
@@ -20,6 +21,7 @@ import * as path from 'path';
     MulterModule.register({
       dest: path.join(__dirname, '../../../', 'tmp'),
     }),
+    ReleaseHistoryModule,
   ],
   exports: [FunctionService],
 })
