@@ -2,12 +2,18 @@ import {
   Body,
   Controller,
   Delete,
+  FileTypeValidator,
   Get,
+  HttpStatus,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
   Post,
   Put,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FunctionService } from './function.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -15,6 +21,10 @@ import { IUserEntity } from '../user/interfaces/IUserEntity';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CreateFunctionDto } from './dto/create-function.dto';
 import { FunctionNotFoundException } from './exceptions/function.exceptions';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { functionMulterDiskOptions } from '../../common/options/function-multer.option';
+import { promisify } from '../../libs/RunnerHelper';
+import * as fs from 'fs';
 
 @Controller('function')
 export class FunctionController {
@@ -53,11 +63,31 @@ export class FunctionController {
 
   @UseGuards(JwtAuthGuard)
   @Post('/build/:funcUUID')
+  @UseInterceptors(FileInterceptor('file'))
   async buildFunction(
     @CurrentUser() user: IUserEntity,
     @Param('funcUUID') funcUUID: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 50 }),
+          new FileTypeValidator({ fileType: 'zip' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
   ) {
-    return this.functionService.buildFunctionProject(user, funcUUID);
+    try {
+      return await this.functionService.buildFunctionProject(
+        user,
+        funcUUID,
+        file.path,
+      );
+    } finally {
+      promisify(() => {
+        fs.rmSync(file.path, { force: true });
+      }).then();
+    }
   }
 
   @UseGuards(JwtAuthGuard)

@@ -70,7 +70,7 @@ function copy(src: string, dest: string): Promise<void> {
   });
 }
 
-function promisify(func: () => void): Promise<void> {
+export function promisify(func: () => void): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     try {
       func();

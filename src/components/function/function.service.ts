@@ -24,6 +24,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { MAX_FUNCTION_COUNT } from '../../common/constants/policy.constant';
 import { RunnerService } from '../runner/runner.service';
 import { EFunctionStatus } from '../../common/enums/EFunctionStatus';
+import * as fs from 'fs';
+import * as unzipper from 'unzipper';
+import * as path from 'path';
 
 @Injectable()
 export class FunctionService {
@@ -160,7 +163,11 @@ export class FunctionService {
     return (await this.functionRepository.save(funcEntity)).metadata;
   }
 
-  async buildFunctionProject(owner: IUserEntity, funcUUID: string) {
+  async buildFunctionProject(
+    owner: IUserEntity,
+    funcUUID: string,
+    funcZipPath: string,
+  ) {
     let fun: FunctionEntity = null;
     {
       const func = await this.getAllFunctions({
@@ -179,6 +186,36 @@ export class FunctionService {
     if (fun.status === EFunctionStatus.BUILD_PROCESS) {
       throw new BuildAlreadyRunningException();
     }
+
+    // 함수 압축 해제
+    const unzipAsync = new Promise<void>((resolve, reject) => {
+      const projectPath = path.join(
+        __dirname,
+        '../../../',
+        'projects',
+        funcUUID,
+      );
+      try {
+        // 프로젝트 폴더 삭제
+        fs.rmSync(projectPath, { recursive: true, force: true });
+
+        // 압축 해제
+        console.log(1);
+        fs.createReadStream(funcZipPath)
+          .pipe(unzipper.Extract({ path: projectPath }))
+          .promise()
+          .then(() => {
+            resolve();
+          })
+          .catch(() => {
+            reject();
+          });
+      } catch (ex) {
+        console.error(ex);
+        reject();
+      }
+    });
+    await unzipAsync;
 
     // 함수 빌드
     await this.runnerService.build(fun.uuid);

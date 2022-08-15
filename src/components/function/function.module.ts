@@ -6,6 +6,8 @@ import { FunctionEntity } from './entities/function.entity';
 import { UserModule } from '../user/user.module';
 import { ApplicationModule } from '../application/application.module';
 import { RunnerModule } from '../runner/runner.module';
+import { MulterModule } from '@nestjs/platform-express';
+import * as path from 'path';
 
 @Module({
   controllers: [FunctionController],
@@ -15,6 +17,9 @@ import { RunnerModule } from '../runner/runner.module';
     UserModule,
     ApplicationModule,
     RunnerModule,
+    MulterModule.register({
+      dest: path.join(__dirname, '../../../', 'tmp'),
+    }),
   ],
   exports: [FunctionService],
 })

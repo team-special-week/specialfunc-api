@@ -65,3 +65,16 @@ export class BuildAlreadyRunningException extends HttpException {
     );
   }
 }
+
+export class NotZipFileException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.NOT_ZIP_FILE,
+        message: 'Not a zip file.',
+        data: {},
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}

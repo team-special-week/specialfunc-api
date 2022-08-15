@@ -39,7 +39,7 @@ export class RunnerService {
       .catch(async (ex) => {
         // 빌드 또는 재시동 실패
         console.error(ex);
-        await this.updateFunctionStatus(uuid, EFunctionStatus.FAILURE);
+        await this.updateFunctionStatus(uuid, EFunctionStatus.BUILD_FAILURE);
       })
       .then(() => {
         // 워크스페이스 삭제

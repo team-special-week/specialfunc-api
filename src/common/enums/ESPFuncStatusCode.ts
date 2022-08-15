@@ -13,4 +13,5 @@ export enum ESPFuncStatusCode {
   ENDPOINT_NOT_VALID = 'F102',
   FUNCTION_NOT_FOUND = 'F103',
   BUILD_ALREADY_RUNNING = 'F104',
+  NOT_ZIP_FILE = 'F105',
 }
