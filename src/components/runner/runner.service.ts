@@ -9,6 +9,7 @@ import {
 } from '../../libs/RunnerHelper';
 import { ReleaseHistoryService } from '../function/apps/release-history.service';
 import { EBuildStatus } from '../../common/enums/EBuildStatus';
+import { PortAssignFailureException } from '../function/exceptions/function.exceptions';
 
 @Injectable()
 export class RunnerService {
@@ -37,6 +38,9 @@ export class RunnerService {
       .then(async () => {
         // 재시동 성공
         await this.updateFunctionStatus(uuid, EBuildStatus.WARM_START);
+
+        // 포트 넘버 할당
+        return this.assignPortToFunction(uuid);
       })
       .catch(async (ex) => {
         // 빌드 또는 재시동 실패
@@ -56,13 +60,40 @@ export class RunnerService {
     );
   }
 
+  async assignPortToFunction(uuid: string) {
+    let contInfo = await exec(`docker inspect ${uuid}`);
+
+    if (!contInfo) {
+      // Docker 컨테이너가 제대로 실행되지 못한 경우
+      throw new PortAssignFailureException();
+    }
+
+    let portNumber = -1;
+    try {
+      contInfo = JSON.parse(contInfo)[0];
+      portNumber = Number(
+        contInfo['NetworkSettings']['Ports']['3000/tcp'][0]['HostPort'],
+      );
+    } catch (ex) {
+      throw new PortAssignFailureException();
+    }
+
+    return this.releaseHistoryService.updateLastReleaseHistoryPort(
+      uuid,
+      portNumber,
+    );
+  }
+
   async reload(uuid: string) {
+    await this.stop(uuid);
+    await exec(`docker run -d -p 3000 --name ${uuid} ${uuid}:latest`);
+  }
+
+  async stop(uuid: string) {
     try {
       // STOP, RM 은 첫 실행 시 안될 수 있음
       await exec(`docker stop ${uuid}`);
       await exec(`docker rm ${uuid}`);
     } catch (ex) {}
-
-    await exec(`docker run -d -p 3000 --name ${uuid} ${uuid}:latest`);
   }
 }

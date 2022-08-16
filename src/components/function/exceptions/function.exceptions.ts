@@ -91,3 +91,18 @@ export class ReleaseHistoryNotFound extends HttpException {
     );
   }
 }
+
+export class PortAssignFailureException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.PORT_ASSIGN_FAILURE,
+        message: 'Port number assign failure.',
+        data: {},
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
+
+

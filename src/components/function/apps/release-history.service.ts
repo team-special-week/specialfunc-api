@@ -52,6 +52,21 @@ export class ReleaseHistoryService {
     });
   }
 
+  async updateLastReleaseHistoryPort(
+    funcUUID: string,
+    portNumber: number,
+  ): Promise<void> {
+    const lastReleaseHistory = await this.findLastReleaseHistory(funcUUID);
+
+    if (lastReleaseHistory === null) {
+      throw new ReleaseHistoryNotFound();
+    }
+
+    await this.releaseHistoryEntity.update(lastReleaseHistory._id, {
+      port: portNumber,
+    });
+  }
+
   async findLastReleaseHistory(
     funcUUID: string,
   ): Promise<IReleaseHistory | null> {
