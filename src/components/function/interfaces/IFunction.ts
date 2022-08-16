@@ -10,4 +10,6 @@ export default interface IFunction {
   httpMethod?: EHttpMethod;
   application?: IApplicationEntity;
   owner?: IUserEntity;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

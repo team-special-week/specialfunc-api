@@ -52,3 +52,57 @@ export class FunctionNotFoundException extends HttpException {
     );
   }
 }
+
+export class BuildAlreadyRunningException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.BUILD_ALREADY_RUNNING,
+        message: 'Build already running.',
+        data: {},
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
+
+export class NotZipFileException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.NOT_ZIP_FILE,
+        message: 'Not a zip file.',
+        data: {},
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
+
+export class ReleaseHistoryNotFound extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.RELEASE_HISTORY_NOT_FOUND,
+        message: 'Release history not found',
+        data: {},
+      },
+      HttpStatus.NOT_FOUND,
+    );
+  }
+}
+
+export class PortAssignFailureException extends HttpException {
+  constructor() {
+    super(
+      {
+        status: ESPFuncStatusCode.PORT_ASSIGN_FAILURE,
+        message: 'Port number assign failure.',
+        data: {},
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
+
+

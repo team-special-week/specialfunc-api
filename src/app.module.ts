@@ -12,6 +12,10 @@ import { AuthModule } from './components/auth/auth.module';
 import { UserModule } from './components/user/user.module';
 import { ApplicationModule } from './components/application/application.module';
 import { FunctionModule } from './components/function/function.module';
+import { RunnerModule } from './components/runner/runner.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { ReleaseHistoryModule } from './components/function/apps/release-history.module';
+import * as path from 'path';
 
 @Module({
   imports: [
@@ -47,10 +51,15 @@ import { FunctionModule } from './components/function/function.module';
         }),
       ],
     }),
+    MulterModule.register({
+      dest: `${path.join(__dirname, 'tmp')}`,
+    }),
     AuthModule,
     UserModule,
     ApplicationModule,
     FunctionModule,
+    RunnerModule,
+    ReleaseHistoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
