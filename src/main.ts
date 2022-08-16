@@ -12,17 +12,12 @@ async function bootstrap() {
   app.use('/api', containerRunner);
 
   // Proxy 연결을 통해 API 엔드포인트 mapping
-  const router = (req) => {
-    console.log(`redirect localhost:${req.port}`);
-    return 'https://www.google.com';
-  };
-
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'https://www.naver.com',
+      target: 'https://www.google.com',
       changeOrigin: true,
-      router,
+      router: (req: any) => `http://localhost:${req.port}`,
     }),
   );
 
