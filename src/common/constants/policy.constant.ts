@@ -10,8 +10,3 @@ export const WORK_DIRECTORY = path.join(__dirname, '../../../', 'workspace');
 export const TEMPLATE_DIRECTORY = path.join(__dirname, '../../../', 'template');
 
 export const LIFECYCLE_INTERVAL = 1000 * 10;
-
-// redis 는 도커 컨테이너에 내장되어 있습니다.
-// export const REDIS_HOST = 'localhost';
-// export const REDIS_PORT = 6379;
-// export const REDIS_TTL = 0;
