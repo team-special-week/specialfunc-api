@@ -15,6 +15,9 @@ import { FunctionModule } from './components/function/function.module';
 import { RunnerModule } from './components/runner/runner.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { ReleaseHistoryModule } from './components/function/apps/release-history.module';
+import { LifecycleModule } from './components/function/apps/lifecycle.module';
+import { CacheDbModule } from './libs/cache-db/cache-db.module';
+import { CacheDbService } from './libs/cache-db/cache-db.service';
 import * as path from 'path';
 
 @Module({
@@ -60,8 +63,10 @@ import * as path from 'path';
     FunctionModule,
     RunnerModule,
     ReleaseHistoryModule,
+    LifecycleModule,
+    CacheDbModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, CacheDbService],
 })
 export class AppModule {}
