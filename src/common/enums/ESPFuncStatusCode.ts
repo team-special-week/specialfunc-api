@@ -17,4 +17,6 @@ export enum ESPFuncStatusCode {
   PORT_ASSIGN_FAILURE = 'F106',
 
   RELEASE_HISTORY_NOT_FOUND = 'R100',
+
+  UPLOAD_FILE_NOT_FOUND = 'U100',
 }

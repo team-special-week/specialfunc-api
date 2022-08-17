@@ -16,9 +16,9 @@ import { RunnerModule } from './components/runner/runner.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { ReleaseHistoryModule } from './components/function/apps/release-history.module';
 import { LifecycleModule } from './components/function/apps/lifecycle.module';
-import { CacheDbModule } from './libs/cache-db/cache-db.module';
-import { CacheDbService } from './libs/cache-db/cache-db.service';
 import * as path from 'path';
+import { CacheDBModule } from './libs/cache-db/cache-db.module';
+import { FileModule } from './components/file/file.module';
 
 @Module({
   imports: [
@@ -64,9 +64,10 @@ import * as path from 'path';
     RunnerModule,
     ReleaseHistoryModule,
     LifecycleModule,
-    CacheDbModule,
+    CacheDBModule,
+    FileModule,
   ],
   controllers: [AppController],
-  providers: [AppService, CacheDbService],
+  providers: [AppService],
 })
 export class AppModule {}
