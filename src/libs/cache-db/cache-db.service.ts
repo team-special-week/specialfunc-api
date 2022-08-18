@@ -18,12 +18,17 @@ export class CacheDBService {
     }
   }
 
-  async get<T>(key: string) {
-    return this.cacheManager.get<T>(key);
+  async get<T>(key: string, defaultValue?: T): Promise<T> {
+    const val = await this.cacheManager.get<T>(key);
+    if (val) {
+      return val;
+    } else {
+      return defaultValue;
+    }
   }
 
-  async getKeys() {
-    return this.cacheManager.store.keys();
+  async getKeys(): Promise<string[]> {
+    return this.cacheManager.store.keys<string>();
   }
 
   async del(key: string) {
