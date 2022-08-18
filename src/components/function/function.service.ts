@@ -21,7 +21,10 @@ import {
   FunctionNotFoundException,
 } from './exceptions/function.exceptions';
 import { v4 as uuidv4 } from 'uuid';
-import { MAX_FUNCTION_COUNT } from '../../common/constants/policy.constant';
+import {
+  LIFECYCLE_POSITIVE_RULE,
+  MAX_FUNCTION_COUNT,
+} from '../../common/constants/policy.constant';
 import { RunnerService } from '../runner/runner.service';
 import * as fs from 'fs';
 import * as unzipper from 'unzipper';
@@ -29,6 +32,8 @@ import * as path from 'path';
 import { ReleaseHistoryService } from './apps/release-history.service';
 import { EBuildStatus } from '../../common/enums/EBuildStatus';
 import IReleaseHistory from './interfaces/IReleaseHistory';
+import { LifecycleService } from './apps/lifecycle.service';
+import { ELifecyclePositive } from '../../common/enums/ELifecycle';
 
 @Injectable()
 export class FunctionService {
@@ -40,6 +45,8 @@ export class FunctionService {
     @Inject(forwardRef(() => RunnerService))
     private readonly runnerService: RunnerService,
     private readonly releaseHistoryService: ReleaseHistoryService,
+    @Inject(forwardRef(() => LifecycleService))
+    private readonly lifecycleService: LifecycleService,
   ) {}
 
   async getAllFunctions(options: FindOptionsWhere<FunctionEntity>) {
@@ -232,6 +239,13 @@ export class FunctionService {
 
     // 함수 빌드
     await this.runnerService.build(fun.uuid);
+
+    // Lifecycle 에 등록
+    await this.lifecycleService.enrollLifecycle(
+      fun.uuid,
+      LIFECYCLE_POSITIVE_RULE[ELifecyclePositive.FUNCTION_BUILD],
+    );
+
     return fun.metadata;
   }
 
