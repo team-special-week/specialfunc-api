@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FunctionEntity } from './entities/function.entity';
 import { FindOptionsWhere, Repository } from 'typeorm';
@@ -14,6 +14,7 @@ import {
 import { IApplicationEntity } from '../application/interfaces/IAppliationEntity';
 import { EHttpMethod } from '../../common/enums/EHttpMethod';
 import {
+  BuildAlreadyRunningException,
   EndpointNotValidException,
   EndpointOrMethodExistsException,
   ExceedFunctionCountException,
@@ -21,6 +22,13 @@ import {
 } from './exceptions/function.exceptions';
 import { v4 as uuidv4 } from 'uuid';
 import { MAX_FUNCTION_COUNT } from '../../common/constants/policy.constant';
+import { RunnerService } from '../runner/runner.service';
+import * as fs from 'fs';
+import * as unzipper from 'unzipper';
+import * as path from 'path';
+import { ReleaseHistoryService } from './apps/release-history.service';
+import { EBuildStatus } from '../../common/enums/EBuildStatus';
+import IReleaseHistory from './interfaces/IReleaseHistory';
 
 @Injectable()
 export class FunctionService {
@@ -29,6 +37,9 @@ export class FunctionService {
     private readonly functionRepository: Repository<FunctionEntity>,
     private readonly userService: UserService,
     private readonly applicationService: ApplicationService,
+    @Inject(forwardRef(() => RunnerService))
+    private readonly runnerService: RunnerService,
+    private readonly releaseHistoryService: ReleaseHistoryService,
   ) {}
 
   async getAllFunctions(options: FindOptionsWhere<FunctionEntity>) {
@@ -92,6 +103,7 @@ export class FunctionService {
       }
     }
 
+    const uuid = (uuidv4() as string).replace(/-/gi, '');
     let savedEntity: FunctionEntity;
     {
       // 새 엔티티 저장
@@ -99,7 +111,7 @@ export class FunctionService {
       funcEntity.applyFromCreateFunctionDto(dto);
       funcEntity.application = application;
       funcEntity.owner = user;
-      funcEntity.uuid = (uuidv4() as string).replace(/-/gi, '');
+      funcEntity.uuid = uuid;
       savedEntity = await this.functionRepository.save(funcEntity);
     }
 
@@ -152,6 +164,94 @@ export class FunctionService {
 
     funcEntity.applyFromCreateFunctionDto(dto);
     return (await this.functionRepository.save(funcEntity)).metadata;
+  }
+
+  async buildFunctionProject(
+    owner: IUserEntity,
+    funcUUID: string,
+    funcZipPath: string,
+  ) {
+    let fun: FunctionEntity = null;
+    {
+      const func = await this.getAllFunctions({
+        owner: { _id: owner._id },
+        uuid: funcUUID,
+      });
+
+      if (func.length === 1) {
+        fun = func[0];
+      } else {
+        throw new FunctionNotFoundException();
+      }
+    }
+
+    // 마지막 빌드 기록을 보고 현재 빌드 상태를 확인
+    const lastReleaseHistory =
+      await this.releaseHistoryService.findLastReleaseHistory(funcUUID);
+    if (
+      lastReleaseHistory !== null &&
+      lastReleaseHistory.buildStatus === EBuildStatus.BUILD_PROCESS
+    ) {
+      throw new BuildAlreadyRunningException();
+    } else {
+      const stat = fs.statSync(funcZipPath);
+      await this.releaseHistoryService.createReleaseHistory(
+        funcUUID,
+        stat.size,
+      );
+    }
+
+    // 함수 압축 해제
+    const unzipAsync = new Promise<void>((resolve, reject) => {
+      const projectPath = path.join(
+        __dirname,
+        '../../../',
+        'projects',
+        funcUUID,
+      );
+      try {
+        // 프로젝트 폴더 삭제
+        fs.rmSync(projectPath, { recursive: true, force: true });
+
+        // 압축 해제
+        fs.createReadStream(funcZipPath)
+          .pipe(unzipper.Extract({ path: projectPath }))
+          .promise()
+          .then(() => {
+            resolve();
+          })
+          .catch(() => {
+            reject();
+          });
+      } catch (ex) {
+        console.error(ex);
+        reject();
+      }
+    });
+    await unzipAsync;
+
+    // 함수 빌드
+    await this.runnerService.build(fun.uuid);
+    return fun.metadata;
+  }
+
+  async getReleaseHistory(
+    owner: IUserEntity,
+    funcUUID: string,
+  ): Promise<IReleaseHistory[]> {
+    const func = await this.functionRepository.findOne({
+      where: {
+        uuid: funcUUID,
+        owner: { _id: owner._id },
+      },
+      relations: ['releaseHistory'],
+    });
+
+    if (!func) {
+      throw new FunctionNotFoundException();
+    }
+
+    return func.releaseHistory.map((value) => value.metadata);
   }
 
   async deleteFunction(owner: IUserEntity, funcUUID: string) {

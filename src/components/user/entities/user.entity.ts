@@ -15,6 +15,7 @@ import { IUserEntity } from '../interfaces/IUserEntity';
 import { ApplicationEntity } from 'src/components/application/entities/application.entity';
 import { BlockedUserException } from '../../auth/exceptions/auth.exceptions';
 import { FunctionEntity } from '../../function/entities/function.entity';
+import { UploadFileEntity } from '../../file/entities/upload-file.entity';
 
 @Entity('spf_users')
 export class UserEntity implements ITypeORMEntityHelper {
@@ -75,6 +76,9 @@ export class UserEntity implements ITypeORMEntityHelper {
 
   @OneToMany(() => FunctionEntity, (func) => func.owner)
   myFunctions: FunctionEntity[];
+
+  @OneToMany(() => UploadFileEntity, (upFile) => upFile.registrant)
+  myUploadFiles: UploadFileEntity[];
 
   @CreateDateColumn()
   createdAt: Date;

@@ -12,6 +12,13 @@ import { AuthModule } from './components/auth/auth.module';
 import { UserModule } from './components/user/user.module';
 import { ApplicationModule } from './components/application/application.module';
 import { FunctionModule } from './components/function/function.module';
+import { RunnerModule } from './components/runner/runner.module';
+import { MulterModule } from '@nestjs/platform-express';
+import { ReleaseHistoryModule } from './components/function/apps/release-history.module';
+import { LifecycleModule } from './components/function/apps/lifecycle.module';
+import * as path from 'path';
+import { CacheDBModule } from './libs/cache-db/cache-db.module';
+import { FileModule } from './components/file/file.module';
 
 @Module({
   imports: [
@@ -47,10 +54,18 @@ import { FunctionModule } from './components/function/function.module';
         }),
       ],
     }),
+    MulterModule.register({
+      dest: `${path.join(__dirname, 'tmp')}`,
+    }),
     AuthModule,
     UserModule,
     ApplicationModule,
     FunctionModule,
+    RunnerModule,
+    ReleaseHistoryModule,
+    LifecycleModule,
+    CacheDBModule,
+    FileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

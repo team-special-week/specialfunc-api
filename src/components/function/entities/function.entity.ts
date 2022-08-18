@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -12,6 +13,7 @@ import { ApplicationEntity } from 'src/components/application/entities/applicati
 import { UserEntity } from '../../user/entities/user.entity';
 import IFunction from '../interfaces/IFunction';
 import { CreateFunctionDto } from '../dto/create-function.dto';
+import { ReleaseHistoryEntity } from './release-history.entity';
 
 @Entity('spf_functions')
 export class FunctionEntity implements ITypeORMEntityHelper {
@@ -46,6 +48,9 @@ export class FunctionEntity implements ITypeORMEntityHelper {
     enum: EHttpMethod,
   })
   httpMethod: EHttpMethod;
+
+  @OneToMany(() => ReleaseHistoryEntity, (rh) => rh.func)
+  releaseHistory: ReleaseHistoryEntity[];
 
   @ManyToOne(() => ApplicationEntity, (app) => app.functions)
   application: ApplicationEntity;
