@@ -1,0 +1,5 @@
+export enum ELifecyclePositive {
+  FUNCTION_BUILD,
+  FUNCTION_WARM_TO_WARM,
+  FUNCTION_COLD_TO_WARM,
+}
