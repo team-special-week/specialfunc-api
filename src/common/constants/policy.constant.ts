@@ -12,6 +12,7 @@ export const TEMPLATE_DIRECTORY = path.join(__dirname, '../../../', 'template');
 
 export const LIFECYCLE_INTERVAL = 1000 * 60;
 export const LIFECYCLE_POSITIVE_RULE = {
-  [ELifecyclePositive.FUNCTION_CALLED]: 12,
+  [ELifecyclePositive.FUNCTION_WARM_TO_WARM]: 12,
+  [ELifecyclePositive.FUNCTION_COLD_TO_WARM]: 30,
   [ELifecyclePositive.FUNCTION_BUILD]: 120,
 };

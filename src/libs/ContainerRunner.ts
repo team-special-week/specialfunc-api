@@ -1,6 +1,9 @@
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import * as mysql from 'mysql2/promise';
 import { EBuildStatus } from 'src/common/enums/EBuildStatus';
+import { RunnerService } from '../components/runner/runner.service';
+import { LifecycleService } from '../components/function/apps/lifecycle.service';
+import { ELifecyclePositive } from '../common/enums/ELifecycle';
 
 const getDBConnection = async () => {
   return mysql.createConnection({
@@ -69,36 +72,67 @@ const findLastReleaseHistory = async (_id: number) => {
   }
 };
 
-export default function containerRunner(req: any, res: Response, next) {
-  new Promise<number>(async (resolve, reject) => {
+export default function containerRunner(
+  runnerService: RunnerService,
+  lifecycleService: LifecycleService,
+) {
+  const throwNotFound = (res) => {
+    res.sendStatus(404);
+  };
+
+  const throwInternalError = (res) => {
+    res.sendStatus(500);
+  };
+
+  return async (req, res, next) => {
     const endpoint = await findEndpoint(req);
 
     // endpoint 가 있는지 확인
     if (!endpoint) {
-      reject();
+      throwNotFound(res);
+      return;
     }
 
     // 해당 endpoint 에 대해 최신 릴리즈 확인
     const lastRelease = await findLastReleaseHistory(endpoint._id);
+    const funcUUID = endpoint.func_uuid;
+
     if (lastRelease) {
       switch (lastRelease.func_build_status) {
         case EBuildStatus.WARM_START:
-          // 최신 릴리즈가 있고, WARM_START 의 경우
-          resolve(lastRelease.func_port);
+          // LIFE TIME 을 증가시킨다.
+          await lifecycleService.increaseLifetime(
+            ELifecyclePositive.FUNCTION_WARM_TO_WARM,
+            funcUUID,
+          );
+          req.port = lastRelease.func_port;
+          console.log('req.port WARM', req.port);
+          next();
           break;
         case EBuildStatus.COLD_START:
-          // 최신 릴리즈가 있고, COLD_START 의 경우
-          // TODO 컨테이너 실행 후 포트 읽어서 반환
+          // 함수를 WARM_START 형태로 바꾸고 접근 포트 얻기
+          const port = await runnerService.warm(endpoint.func_uuid);
+          if (port) {
+            // LIFE TIME 증가
+            await lifecycleService.increaseLifetime(
+              ELifecyclePositive.FUNCTION_COLD_TO_WARM,
+              funcUUID,
+            );
+            req.port = port;
+            next();
+          } else {
+            throwInternalError(res);
+            return;
+          }
           break;
         default:
-          reject();
+          throwNotFound(res);
+          return;
       }
     } else {
       // 함수가 배포된 기록이 없는 경우
-      reject();
+      throwNotFound(res);
+      return;
     }
-  }).then((port: number) => {
-    req.port = port;
-    next();
-  });
+  };
 }

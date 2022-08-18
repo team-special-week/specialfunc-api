@@ -1,5 +1,4 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
-import { FunctionService } from '../function/function.service';
+import { Injectable } from '@nestjs/common';
 import {
   buildFunctionProject,
   copyFunctionProject,
@@ -13,11 +12,7 @@ import { PortAssignFailureException } from '../function/exceptions/function.exce
 
 @Injectable()
 export class RunnerService {
-  constructor(
-    @Inject(forwardRef(() => FunctionService))
-    private readonly functionService: FunctionService,
-    private readonly releaseHistoryService: ReleaseHistoryService,
-  ) {}
+  constructor(private readonly releaseHistoryService: ReleaseHistoryService) {}
 
   async build(uuid: string) {
     // 워크스페이스 생성
@@ -64,18 +59,18 @@ export class RunnerService {
       });
   }
 
-  warm(uuid: string) {
-    this.start(uuid)
+  async warm(uuid: string): Promise<number | null> {
+    return this.start(uuid)
       .then(() => {
-        // 컨테이너 실행 성공, 포트 번호 할당
-        return this.assignPortToFunction(uuid);
+        // 컨테이너 실행 성공, WARM_START 로 상태 변경
+        return this.updateFunctionStatus(uuid, EBuildStatus.WARM_START);
       })
       .then(() => {
-        // 포트번호 할당 성공, WARM_START 로 상태 변경
-        return this.updateFunctionStatus(uuid, EBuildStatus.WARM_START);
+        return this.assignPortToFunction(uuid);
       })
       .catch((ex) => {
         console.error(ex);
+        return null;
       });
   }
 
@@ -86,7 +81,7 @@ export class RunnerService {
     );
   }
 
-  async assignPortToFunction(uuid: string) {
+  async assignPortToFunction(uuid: string): Promise<number> {
     let contInfo = await exec(`docker inspect ${uuid}`);
 
     if (!contInfo) {
@@ -104,10 +99,12 @@ export class RunnerService {
       throw new PortAssignFailureException();
     }
 
-    return this.releaseHistoryService.updateLastReleaseHistoryPort(
+    await this.releaseHistoryService.updateLastReleaseHistoryPort(
       uuid,
       portNumber,
     );
+
+    return portNumber;
   }
 
   async reload(uuid: string) {
