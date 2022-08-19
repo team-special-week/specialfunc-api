@@ -76,10 +76,6 @@ export class FunctionController {
     )
     file: Express.Multer.File,
   ) {
-    user = {
-      _id: 2,
-    };
-
     try {
       return await this.functionService.buildFunctionProject(
         user,

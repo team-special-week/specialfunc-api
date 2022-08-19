@@ -17,7 +17,7 @@ import { LifecycleModule } from './apps/lifecycle.module';
   imports: [
     TypeOrmModule.forFeature([FunctionEntity]),
     UserModule,
-    ApplicationModule,
+    forwardRef(() => ApplicationModule),
     RunnerModule,
     MulterModule.register({
       dest: path.join(__dirname, '../../../', 'tmp'),

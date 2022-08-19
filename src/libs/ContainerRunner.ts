@@ -42,15 +42,18 @@ const isEndpointMatch = (reqEndpoint: string, dbEndpoint: string) => {
 
 const findEndpoint = async (req: Request) => {
   const conn = await getDBConnection();
-  const url = req.originalUrl.replace('/api', '');
-  const method = req.method.toUpperCase();
 
-  const [results] = await conn.query(
-    `SELECT * FROM spf_functions WHERE func_http_method = ?`,
-    [method],
+  let url = req.originalUrl.replace('/api', '');
+  const appEndpoint = url.split('/')[1];
+  url = url.replace(`/${appEndpoint}`, '');
+
+  // 애플리케이션 찾기
+  const [appResults] = await conn.query(
+    `SELECT spf_functions.* FROM spf_applications LEFT JOIN spf_functions ON spf_applications._id = spf_functions.application_id WHERE app_endpoint = ?;`,
+    [appEndpoint],
   );
 
-  for (const result of results as any[]) {
+  for (const result of appResults as any[]) {
     if (isEndpointMatch(url, result.func_endpoint)) {
       return result;
     }
