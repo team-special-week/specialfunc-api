@@ -37,7 +37,6 @@ import { FileModule } from './components/file/file.module';
         database: configService.get('MYSQL_DATABASE_NAME'),
         synchronize: configService.get('SYNCHRONIZE') === 'true',
         entities: [__dirname + '/**/entities/*.entity{.ts,.js}'],
-        logging: true,
       }),
       inject: [ConfigService],
     }),

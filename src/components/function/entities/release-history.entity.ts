@@ -36,7 +36,9 @@ export class ReleaseHistoryEntity implements ITypeORMEntityHelper {
   })
   port?: number;
 
-  @ManyToOne(() => FunctionEntity, (func) => func.releaseHistory)
+  @ManyToOne(() => FunctionEntity, (func) => func.releaseHistory, {
+    onDelete: 'CASCADE',
+  })
   func: FunctionEntity;
 
   @UpdateDateColumn()
