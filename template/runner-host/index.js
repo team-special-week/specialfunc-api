@@ -12,7 +12,7 @@ app.use(async (ctx) => {
     return ex;
   }
 
-  ctx.body = await func();
+  ctx.body = await func(ctx);
 });
 
 app.listen(3000);
