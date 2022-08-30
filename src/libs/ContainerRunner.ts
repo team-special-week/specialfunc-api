@@ -5,15 +5,6 @@ import { RunnerService } from '../components/runner/runner.service';
 import { LifecycleService } from '../components/function/apps/lifecycle.service';
 import { ELifecyclePositive } from '../common/enums/ELifecycle';
 
-const getDBConnection = async () => {
-  return mysql.createConnection({
-    host: process.env.MYSQL_DATABASE_HOST,
-    user: process.env.MYSQL_DATABASE_USER,
-    password: process.env.MYSQL_DATABASE_PASS,
-    database: process.env.MYSQL_DATABASE_NAME,
-  });
-};
-
 const isEndpointMatch = (reqEndpoint: string, dbEndpoint: string) => {
   // endpoint 마지막에 '/' 가 들어가지 않도록 조치
   if (reqEndpoint[reqEndpoint.length - 1] === '/') {
@@ -40,9 +31,7 @@ const isEndpointMatch = (reqEndpoint: string, dbEndpoint: string) => {
   return true;
 };
 
-const findEndpoint = async (req: Request) => {
-  const conn = await getDBConnection();
-
+const findEndpoint = async (req: Request, conn: mysql.Connection) => {
   let url = req.originalUrl.replace('/api', '');
   const appEndpoint = url.split('/')[1];
   url = url.replace(`/${appEndpoint}`, '');
@@ -61,8 +50,7 @@ const findEndpoint = async (req: Request) => {
   return null;
 };
 
-const findLastReleaseHistory = async (_id: number) => {
-  const conn = await getDBConnection();
+const findLastReleaseHistory = async (_id: number, conn: mysql.Connection) => {
   const [results] = await conn.query(
     `SELECT * FROM spf_function_releases WHERE func_id = ? ORDER BY _id DESC LIMIT 1`,
     [_id],
@@ -88,53 +76,71 @@ export default function containerRunner(
   };
 
   return async (req, res, next) => {
-    const endpoint = await findEndpoint(req);
+    let conn: mysql.Connection = null;
+    try {
+      // DB 커넥션 연결
+      conn = await mysql.createConnection({
+        host: process.env.MYSQL_DATABASE_HOST,
+        user: process.env.MYSQL_DATABASE_USER,
+        password: process.env.MYSQL_DATABASE_PASS,
+        database: process.env.MYSQL_DATABASE_NAME,
+      });
 
-    // endpoint 가 있는지 확인
-    if (!endpoint) {
-      throwNotFound(res);
-      return;
-    }
+      const endpoint = await findEndpoint(req, conn);
 
-    // 해당 endpoint 에 대해 최신 릴리즈 확인
-    const lastRelease = await findLastReleaseHistory(endpoint._id);
-    const funcUUID = endpoint.func_uuid;
+      // endpoint 가 있는지 확인
+      if (!endpoint) {
+        throwNotFound(res);
+        return;
+      }
 
-    if (lastRelease) {
-      switch (lastRelease.func_build_status) {
-        case EBuildStatus.WARM_START:
-          // LIFE TIME 을 증가시킨다.
-          await lifecycleService.increaseLifetime(
-            ELifecyclePositive.FUNCTION_WARM_TO_WARM,
-            funcUUID,
-          );
-          req.port = lastRelease.func_port;
-          next();
-          break;
-        case EBuildStatus.COLD_START:
-          // 함수를 WARM_START 형태로 바꾸고 접근 포트 얻기
-          const port = await runnerService.warm(endpoint.func_uuid);
-          if (port) {
-            // LIFE TIME 증가
+      // 해당 endpoint 에 대해 최신 릴리즈 확인
+      const lastRelease = await findLastReleaseHistory(endpoint._id, conn);
+      const funcUUID = endpoint.func_uuid;
+
+      if (lastRelease) {
+        switch (lastRelease.func_build_status) {
+          case EBuildStatus.WARM_START:
+            // LIFE TIME 을 증가시킨다.
             await lifecycleService.increaseLifetime(
-              ELifecyclePositive.FUNCTION_COLD_TO_WARM,
+              ELifecyclePositive.FUNCTION_WARM_TO_WARM,
               funcUUID,
             );
-            req.port = port;
+            req.port = lastRelease.func_port;
             next();
-          } else {
-            throwInternalError(res);
+            break;
+          case EBuildStatus.COLD_START:
+            // 함수를 WARM_START 형태로 바꾸고 접근 포트 얻기
+            const port = await runnerService.warm(endpoint.func_uuid);
+            if (port) {
+              // LIFE TIME 증가
+              await lifecycleService.increaseLifetime(
+                ELifecyclePositive.FUNCTION_COLD_TO_WARM,
+                funcUUID,
+              );
+              req.port = port;
+              next();
+            } else {
+              throwInternalError(res);
+              return;
+            }
+            break;
+          default:
+            throwNotFound(res);
             return;
-          }
-          break;
-        default:
-          throwNotFound(res);
-          return;
+        }
+      } else {
+        // 함수가 배포된 기록이 없는 경우
+        throwNotFound(res);
+        return;
       }
-    } else {
-      // 함수가 배포된 기록이 없는 경우
-      throwNotFound(res);
-      return;
+    } catch (ex) {
+      console.error(ex);
+    } finally {
+      if (conn) {
+        // connection 정리
+        conn.destroy();
+      }
     }
   };
 }
