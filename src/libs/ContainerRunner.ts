@@ -49,7 +49,7 @@ const findEndpoint = async (req: Request) => {
 
   // 애플리케이션 찾기
   const [appResults] = await conn.query(
-    `SELECT spf_functions.* FROM spf_applications LEFT JOIN spf_functions ON spf_applications._id = spf_functions.application_id WHERE app_endpoint = ?;`,
+    `SELECT spf_functions.* FROM spf_applications LEFT JOIN spf_functions ON spf_applications._id = spf_functions.application_id WHERE app_endpoint = ? AND deletedAt IS NOT NULL;`,
     [appEndpoint],
   );
 
@@ -109,7 +109,6 @@ export default function containerRunner(
             funcUUID,
           );
           req.port = lastRelease.func_port;
-          console.log('req.port WARM', req.port);
           next();
           break;
         case EBuildStatus.COLD_START:
