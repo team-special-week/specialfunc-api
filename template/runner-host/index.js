@@ -8,12 +8,11 @@ app.use(async (ctx) => {
     const { main } = require('../function/main');
     func = main;
   } catch (ex) {
-    ctx.body = ex;
-    ctx.status = 404;
-    return;
+    ctx.status = 502;
+    return ex;
   }
 
-  ctx.body = await func();
+  ctx.body = await func(ctx.request);
 });
 
 app.listen(3000);

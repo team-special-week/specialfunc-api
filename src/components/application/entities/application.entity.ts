@@ -48,7 +48,9 @@ export class ApplicationEntity implements ITypeORMEntityHelper {
   })
   endpoint: string;
 
-  @OneToMany(() => FunctionEntity, (func) => func.application)
+  @OneToMany(() => FunctionEntity, (func) => func.application, {
+    cascade: true,
+  })
   functions: FunctionEntity[];
 
   @Index('idx_owner')

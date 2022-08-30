@@ -21,7 +21,12 @@ import {
   FunctionNotFoundException,
 } from './exceptions/function.exceptions';
 import { v4 as uuidv4 } from 'uuid';
-import { MAX_FUNCTION_COUNT } from '../../common/constants/policy.constant';
+import {
+  LIFECYCLE_POSITIVE_RULE,
+  MAX_FUNCTION_COUNT,
+  PROJECT_DIRECTORY,
+  WORK_DIRECTORY,
+} from '../../common/constants/policy.constant';
 import { RunnerService } from '../runner/runner.service';
 import * as fs from 'fs';
 import * as unzipper from 'unzipper';
@@ -29,6 +34,9 @@ import * as path from 'path';
 import { ReleaseHistoryService } from './apps/release-history.service';
 import { EBuildStatus } from '../../common/enums/EBuildStatus';
 import IReleaseHistory from './interfaces/IReleaseHistory';
+import { LifecycleService } from './apps/lifecycle.service';
+import { ELifecyclePositive } from '../../common/enums/ELifecycle';
+import { promisify } from '../../libs/RunnerHelper';
 
 @Injectable()
 export class FunctionService {
@@ -36,10 +44,13 @@ export class FunctionService {
     @InjectRepository(FunctionEntity)
     private readonly functionRepository: Repository<FunctionEntity>,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => ApplicationService))
     private readonly applicationService: ApplicationService,
     @Inject(forwardRef(() => RunnerService))
     private readonly runnerService: RunnerService,
     private readonly releaseHistoryService: ReleaseHistoryService,
+    @Inject(forwardRef(() => LifecycleService))
+    private readonly lifecycleService: LifecycleService,
   ) {}
 
   async getAllFunctions(options: FindOptionsWhere<FunctionEntity>) {
@@ -232,6 +243,13 @@ export class FunctionService {
 
     // 함수 빌드
     await this.runnerService.build(fun.uuid);
+
+    // Lifecycle 에 등록
+    await this.lifecycleService.enrollLifecycle(
+      fun.uuid,
+      LIFECYCLE_POSITIVE_RULE[ELifecyclePositive.FUNCTION_BUILD],
+    );
+
     return fun.metadata;
   }
 
@@ -263,13 +281,26 @@ export class FunctionService {
     });
 
     if (func) {
-      // TODO
-      // Runner 에게 function 프로젝트 삭제를 요청
-
       // Function 삭제
       await this.functionRepository.delete({
         uuid: funcUUID,
       });
+
+      // Docker 에 함수 중지 및 삭제 요청
+      this.runnerService
+        .stop(funcUUID)
+        .then(() => {
+          // 프로젝트 폴더 삭제
+          return promisify(() => {
+            const projectPath = path.join(PROJECT_DIRECTORY, funcUUID);
+            fs.rmSync(projectPath, { recursive: true, force: true });
+          });
+        })
+        .then(() => {
+          // 라이프 사이클 제거
+          return this.lifecycleService.terminateLifecycle(funcUUID);
+        })
+        .catch((ex) => console.error(ex));
     } else {
       throw new FunctionNotFoundException();
     }

@@ -52,7 +52,9 @@ export class FunctionEntity implements ITypeORMEntityHelper {
   @OneToMany(() => ReleaseHistoryEntity, (rh) => rh.func)
   releaseHistory: ReleaseHistoryEntity[];
 
-  @ManyToOne(() => ApplicationEntity, (app) => app.functions)
+  @ManyToOne(() => ApplicationEntity, (app) => app.functions, {
+    onDelete: 'CASCADE',
+  })
   application: ApplicationEntity;
 
   @ManyToOne(() => UserEntity, (user) => user.myFunctions)

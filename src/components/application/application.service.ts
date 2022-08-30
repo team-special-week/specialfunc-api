@@ -1,10 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ApplicationEntity } from './entities/application.entity';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { IUserEntity } from '../user/interfaces/IUserEntity';
-import { MAX_APPLICATION_COUNT } from '../../common/constants/policy.constant';
+import {
+  ENDPOINT_RESPAWN_TIME,
+  LIFECYCLE_INTERVAL,
+  MAX_APPLICATION_COUNT,
+} from '../../common/constants/policy.constant';
 import {
   ApplicationNotFoundException,
   EndpointAlreadyExistsException,
@@ -12,6 +16,8 @@ import {
 } from './exceptions/application.exceptions';
 import { UserService } from '../user/user.service';
 import { IApplicationEntity } from './interfaces/IAppliationEntity';
+import { Interval } from '@nestjs/schedule';
+import { FunctionService } from '../function/function.service';
 
 @Injectable()
 export class ApplicationService {
@@ -19,6 +25,8 @@ export class ApplicationService {
     @InjectRepository(ApplicationEntity)
     private readonly applicationRepository: Repository<ApplicationEntity>,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => FunctionService))
+    private readonly functionService: FunctionService,
   ) {}
 
   async createApplication(
@@ -89,8 +97,16 @@ export class ApplicationService {
       application = myApplication[0];
     }
 
-    // TODO
-    // Application 을 삭제하는 경우, function 도 삭제해야함
+    // Function 중지 및 전체 삭제
+    const funcs = await this.functionService.getAllFunctions({
+      application: { _id: application._id },
+    });
+    for (const fun of funcs) {
+      this.functionService
+        .deleteFunction(owner, fun.uuid)
+        .catch((ex) => console.error(ex));
+    }
+
     await this.applicationRepository.softDelete(application._id);
   }
 
@@ -113,5 +129,16 @@ export class ApplicationService {
     });
 
     return !tmpApp;
+  }
+
+  @Interval(1000 * 3600)
+  async clearDeletedApplications() {
+    const expiredDate = new Date();
+    expiredDate.setDate(expiredDate.getDate() + ENDPOINT_RESPAWN_TIME);
+
+    // Soft delete 된 애플리케이션 중, ENDPOINT_RESPAWN_TIME 가 지난 앱을 삭제
+    return this.applicationRepository.delete({
+      deletedAt: MoreThan(expiredDate),
+    });
   }
 }

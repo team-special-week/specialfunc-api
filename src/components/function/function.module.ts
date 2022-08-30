@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { FunctionController } from './function.controller';
 import { FunctionService } from './function.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,6 +9,7 @@ import { RunnerModule } from '../runner/runner.module';
 import { MulterModule } from '@nestjs/platform-express';
 import * as path from 'path';
 import { ReleaseHistoryModule } from './apps/release-history.module';
+import { LifecycleModule } from './apps/lifecycle.module';
 
 @Module({
   controllers: [FunctionController],
@@ -16,12 +17,13 @@ import { ReleaseHistoryModule } from './apps/release-history.module';
   imports: [
     TypeOrmModule.forFeature([FunctionEntity]),
     UserModule,
-    ApplicationModule,
+    forwardRef(() => ApplicationModule),
     RunnerModule,
     MulterModule.register({
       dest: path.join(__dirname, '../../../', 'tmp'),
     }),
     ReleaseHistoryModule,
+    forwardRef(() => LifecycleModule),
   ],
   exports: [FunctionService],
 })
