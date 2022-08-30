@@ -49,7 +49,7 @@ const findEndpoint = async (req: Request) => {
 
   // 애플리케이션 찾기
   const [appResults] = await conn.query(
-    `SELECT spf_functions.* FROM spf_applications LEFT JOIN spf_functions ON spf_applications._id = spf_functions.application_id WHERE app_endpoint = ? AND deletedAt IS NOT NULL;`,
+    `SELECT spf_functions.* FROM spf_applications LEFT JOIN spf_functions ON spf_applications._id = spf_functions.application_id WHERE app_endpoint = ? AND deletedAt IS NULL;`,
     [appEndpoint],
   );
 
