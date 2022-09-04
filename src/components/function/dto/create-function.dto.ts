@@ -15,7 +15,6 @@ export class CreateFunctionDto {
 
   @IsString()
   @Matches(/[a-zA-Z\d-/*]/g)
-  @MinLength(2)
   @MaxLength(100)
   endpoint: string;
 

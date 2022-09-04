@@ -57,6 +57,14 @@ export class FunctionController {
     @Body() dto: CreateFunctionDto,
     @Query('appEndpoint') appEndpoint?: string,
   ) {
+    // 2022.09.04 ep 의 첫 글자가 slash 인지 확인하고 아니면 붙이고
+    if (dto.endpoint[0] !== '/') {
+      dto.endpoint = `/${dto.endpoint}`;
+    }
+
+    console.log(dto);
+    return;
+
     return this.functionService.createFunction(user, dto, appEndpoint);
   }
 
