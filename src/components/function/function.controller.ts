@@ -62,9 +62,6 @@ export class FunctionController {
       dto.endpoint = `/${dto.endpoint}`;
     }
 
-    console.log(dto);
-    return;
-
     return this.functionService.createFunction(user, dto, appEndpoint);
   }
 
@@ -140,6 +137,11 @@ export class FunctionController {
     @Body() dto: CreateFunctionDto,
     @Param('funcUUID') funcUUID: string,
   ) {
+    // 2022.09.04 ep 의 첫 글자가 slash 인지 확인하고 아니면 붙이고
+    if (dto.endpoint[0] !== '/') {
+      dto.endpoint = `/${dto.endpoint}`;
+    }
+
     return this.functionService.updateFunction(user, dto, funcUUID);
   }
 
