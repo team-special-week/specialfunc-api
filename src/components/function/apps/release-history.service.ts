@@ -71,6 +71,9 @@ export class ReleaseHistoryService {
     funcUUID: string,
   ): Promise<IReleaseHistory | null> {
     const func = await this.getFunction(funcUUID);
+    if (!func) {
+      return null;
+    }
 
     if (func.releaseHistory.length > 0) {
       return func.releaseHistory[func.releaseHistory.length - 1].metadata;
@@ -81,6 +84,10 @@ export class ReleaseHistoryService {
 
   async deprecateReleaseHistory(funcUUID: string) {
     const func = await this.getFunction(funcUUID);
+    if (!func) {
+      return null;
+    }
+
     const releaseHistory = await this.releaseHistoryEntity.find({
       where: {
         func: { _id: func._id },
