@@ -54,7 +54,7 @@ jobs:
         JWT_SECRET_TOKEN: ${{ secrets.JWT_SECRET_TOKEN }}
         
       with:
-        host: direct.saintdev.kr
+        host: direct.ballbot.dev:22200
         user: ${{ secrets.SAINTDEVKR_USERNAME }}
         pass: ${{ secrets.SAINTDEVKR_PASSWORD }}
         port: 22
