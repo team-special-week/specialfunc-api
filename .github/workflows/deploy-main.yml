@@ -54,10 +54,10 @@ jobs:
         JWT_SECRET_TOKEN: ${{ secrets.JWT_SECRET_TOKEN }}
         
       with:
-        host: direct.ballbot.dev:22200
+        host: direct.ballbot.dev
         user: ${{ secrets.SAINTDEVKR_USERNAME }}
         pass: ${{ secrets.SAINTDEVKR_PASSWORD }}
-        port: 22
+        port: 22200
         connect_timeout: 10s
         first_ssh: |
           docker stop specialfunc-api || true
